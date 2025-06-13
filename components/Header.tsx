@@ -2,11 +2,13 @@
 
 import React, { useState, useEffect } from 'react'
 import { useLanguage } from '@/contexts/LanguageContext'
-import { Search, Heart, ShoppingCart, User, Globe } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
+import { Search, Heart, ShoppingCart, User, Globe, LogOut } from 'lucide-react'
 import AuthModal from './AuthModal'
 
 export default function Header() {
   const { language, setLanguage, t } = useLanguage()
+  const { user, signOut } = useAuth()
   const [currentInfoIndex, setCurrentInfoIndex] = useState(0)
   const [showAuthModal, setShowAuthModal] = useState(false)
 
@@ -23,6 +25,17 @@ export default function Header() {
     }, 3000)
     return () => clearInterval(interval)
   }, [infoItems.length])
+
+  const handleSignOut = async () => {
+    await signOut()
+  }
+
+  const getUserDisplayName = () => {
+    if (user?.user_metadata?.name) {
+      return user.user_metadata.name
+    }
+    return user?.email?.split('@')[0] || 'User'
+  }
 
   return (
     <header className="w-full">
@@ -108,14 +121,30 @@ export default function Header() {
               </span>
             </button>
 
-            {/* Login/Register */}
-            <button 
-              onClick={() => setShowAuthModal(true)}
-              className="flex items-center space-x-2 text-gray-700 hover:text-gray-900"
-            >
-              <User className="w-6 h-6" />
-              <span className="hidden lg:block font-medium">{t('login')}</span>
-            </button>
+            {/* User Menu */}
+            {user ? (
+              <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 text-gray-700">
+                  <User className="w-6 h-6" />
+                  <span className="hidden lg:block font-medium">{getUserDisplayName()}</span>
+                </div>
+                <button 
+                  onClick={handleSignOut}
+                  className="flex items-center space-x-1 text-gray-500 hover:text-gray-700"
+                  title="Sign Out"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <button 
+                onClick={() => setShowAuthModal(true)}
+                className="flex items-center space-x-2 text-gray-700 hover:text-gray-900"
+              >
+                <User className="w-6 h-6" />
+                <span className="hidden lg:block font-medium">{t('login')}</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

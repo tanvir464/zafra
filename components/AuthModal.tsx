@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useAuth } from '@/contexts/AuthContext'
 import { X, Mail, Phone, Lock, User, Eye, EyeOff } from 'lucide-react'
 
 interface AuthModalProps {
@@ -12,6 +13,7 @@ interface AuthModalProps {
 
 export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalProps) {
   const { t } = useLanguage()
+  const { signIn, signUp } = useAuth()
   const [mode, setMode] = useState<'login' | 'register'>(initialMode)
   const [loginMethod, setLoginMethod] = useState<'email' | 'phone'>('email')
   const [showPassword, setShowPassword] = useState(false)
@@ -23,19 +25,63 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
     confirmPassword: ''
   })
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   if (!isOpen) return null
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setError(null)
     
-    // Mock authentication - replace with real API calls
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    try {
+      if (mode === 'login') {
+        const { error } = await signIn(formData.email, formData.password)
+        if (error) {
+          setError(error.message)
+        } else {
+          onClose()
+        }
+      } else {
+        // Register validation
+        if (formData.name === '') {
+          setError('Please enter your name')
+          setIsLoading(false)
+          return
+        }
+        if (formData.password === '') {
+          setError('Please enter your password')
+          setIsLoading(false)
+          return
+        }
+        if (formData.email === '') {
+          setError('Please enter your email')
+          setIsLoading(false)
+          return
+        }
+        if (formData.confirmPassword === '') {
+          setError('Please enter your confirm password')
+          setIsLoading(false)
+          return
+        }
+        if (formData.password !== formData.confirmPassword) {
+          setError('Passwords do not match')
+          setIsLoading(false)
+          return
+        }
+
+        const { error } = await signUp(formData.email, formData.password, formData.name)
+        if (error) {
+          setError(error.message)
+        } else {
+          onClose()
+        }
+      }
+    } catch (err) {
+      setError('An unexpected error occurred')
+    }
     
-    console.log('Auth attempt:', { mode, loginMethod, formData })
     setIsLoading(false)
-    onClose()
   }
 
   const handleGoogleLogin = async () => {
@@ -65,6 +111,12 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
 
         {/* Content */}
         <div className="p-6">
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+              {error}
+            </div>
+          )}
+          
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'register' && (
               <div>
@@ -77,7 +129,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
                     placeholder="Enter your full name"
                     required={mode === 'register'}
                   />
@@ -131,7 +183,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
                     ...prev, 
                     [loginMethod]: e.target.value 
                   }))}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
                   placeholder={loginMethod === 'email' ? 'your@email.com' : '+880 1XX XXX XXXX'}
                   required
                 />
@@ -149,7 +201,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
                   type={showPassword ? 'text' : 'password'}
                   value={formData.password}
                   onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                  className="w-full pl-10 pr-12 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-10 pr-12 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
                   placeholder="Enter your password"
                   required
                 />
@@ -175,7 +227,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
                     type="password"
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black "
                     placeholder="Confirm your password"
                     required={mode === 'register'}
                   />
