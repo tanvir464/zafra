@@ -270,7 +270,7 @@ export default function CartPage() {
                     <select
                       value={checkoutData.payment_method}
                       onChange={(e) => setCheckoutData(prev => ({ ...prev, payment_method: e.target.value as 'cod' | 'bkash' | 'sslcommerz' }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm sm:text-base"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm sm:text-base text-black"
                     >
                       <option value="cod">Cash on Delivery</option>
                       <option value="bkash">bKash</option>

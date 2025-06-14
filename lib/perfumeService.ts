@@ -22,6 +22,27 @@ export class PerfumeService {
     }
   }
 
+  // Fetch a single perfume by ID
+  static async getPerfumeById(id: string): Promise<Perfume | null> {
+    try {
+      const { data, error } = await supabase
+        .from('perfumes')
+        .select('*')
+        .eq('id', id)
+        .single()
+
+      if (error) {
+        console.error('Error fetching perfume by ID:', error)
+        throw error
+      }
+
+      return data
+    } catch (error) {
+      console.error('Error in getPerfumeById:', error)
+      return null
+    }
+  }
+
   // Fetch featured perfumes
   static async getFeaturedPerfumes(): Promise<Perfume[]> {
     try {
@@ -102,6 +123,49 @@ export class PerfumeService {
       return data || []
     } catch (error) {
       console.error('Error in getExclusivePerfumes:', error)
+      return []
+    }
+  }
+
+  // Fetch unique brands
+  static async getUniqueBrands(): Promise<string[]> {
+    try {
+      const { data, error } = await supabase
+        .from('perfumes')
+        .select('brand')
+        .order('brand', { ascending: true })
+
+      if (error) {
+        console.error('Error fetching brands:', error)
+        throw error
+      }
+
+      // Remove duplicates and return unique brands
+      const uniqueBrands = [...new Set(data?.map(item => item.brand) || [])]
+      return uniqueBrands
+    } catch (error) {
+      console.error('Error in getUniqueBrands:', error)
+      return []
+    }
+  }
+
+  // Fetch perfumes by brand
+  static async getPerfumesByBrand(brand: string): Promise<Perfume[]> {
+    try {
+      const { data, error } = await supabase
+        .from('perfumes')
+        .select('*')
+        .eq('brand', brand)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Error fetching perfumes by brand:', error)
+        throw error
+      }
+
+      return data || []
+    } catch (error) {
+      console.error('Error in getPerfumesByBrand:', error)
       return []
     }
   }

@@ -60,6 +60,17 @@ export interface OrderItem {
   perfume?: Perfume
 }
 
+export interface Review {
+  id: string
+  user_id: string
+  perfume_id: string
+  rating: number
+  comment: string
+  user_name: string
+  created_at: string
+  updated_at: string
+}
+
 export interface Banner {
   id: string
   title: string

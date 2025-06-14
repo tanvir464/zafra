@@ -4,6 +4,7 @@ import React from 'react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { Perfume } from '@/types'
 import PerfumeCard from './PerfumeCard'
+import { useRouter } from 'next/navigation'
 
 interface PerfumeSectionProps {
   title: string
@@ -21,14 +22,28 @@ export default function PerfumeSection({
   wishlistItems = []
 }: PerfumeSectionProps) {
   const { t } = useLanguage()
-
+  const router = useRouter()
   if (perfumes.length === 0) return null
+
+  const handleViewAll = () => {
+    if (title === 'Exclusive Collection') {
+      router.push('/exclusive')
+    } else if (title === 'Best Sellers') {
+      router.push('/popular')
+    } else if (title === 'New Arrivals') {
+      router.push('/new-arrivals')
+    } else  {
+      router.push('/perfumes')
+    }
+  }
 
   return (
     <section className="mb-12">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl md:text-3xl font-bold text-gray-900">{title}</h2>
-        <button className="text-gray-600 hover:text-gray-900 font-medium">
+        <button className="text-gray-600 hover:text-gray-900 font-medium"
+        onClick={handleViewAll}
+        >
           View All →
         </button>
       </div>

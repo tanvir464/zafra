@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { Heart, ShoppingCart } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useRouter } from 'next/navigation'
 import { Perfume } from '@/types'
 
 interface PerfumeCardProps {
@@ -19,9 +20,11 @@ export default function PerfumeCard({
   isInWishlist = false 
 }: PerfumeCardProps) {
   const { t } = useLanguage()
+  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
 
-  const handleAddToWishlist = async () => {
+  const handleAddToWishlist = async (e: React.MouseEvent) => {
+    e.stopPropagation()
     if (onAddToWishlist) {
       setIsLoading(true)
       await onAddToWishlist(perfume.id)
@@ -29,7 +32,8 @@ export default function PerfumeCard({
     }
   }
 
-  const handleAddToCart = async () => {
+  const handleAddToCart = async (e: React.MouseEvent) => {
+    e.stopPropagation()
     if (onAddToCart) {
       setIsLoading(true)
       await onAddToCart(perfume.id)
@@ -37,12 +41,19 @@ export default function PerfumeCard({
     }
   }
 
+  const handleCardClick = () => {
+    router.push(`/perfumes/${perfume.id}`)
+  }
+
   const discountPercentage = perfume.discount_price 
     ? Math.round(((perfume.price - perfume.discount_price) / perfume.price) * 100)
     : 0
 
   return (
-    <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden group">
+    <div 
+      className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden group cursor-pointer"
+      onClick={handleCardClick}
+    >
       {/* Image Container */}
       <div className="relative aspect-square overflow-hidden">
         <img

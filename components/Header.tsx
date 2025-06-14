@@ -4,15 +4,18 @@ import React, { useState, useEffect } from 'react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePerfume } from '@/contexts/PerfumeContext'
-import { Search, Heart, ShoppingCart, User, Globe, LogOut } from 'lucide-react'
+import { Search, Heart, ShoppingCart, User, Globe, LogOut, Settings } from 'lucide-react'
 import AuthModal from './AuthModal'
+import { useRouter } from 'next/navigation'
 
 export default function Header() {
+  const router = useRouter()
   const { language, setLanguage, t } = useLanguage()
   const { user, signOut } = useAuth()
   const { getCartItemCount, wishlistItems } = usePerfume()
   const [currentInfoIndex, setCurrentInfoIndex] = useState(0)
   const [showAuthModal, setShowAuthModal] = useState(false)
+  const [showUserMenu, setShowUserMenu] = useState(false)
 
   const infoItems = [
     t('click_collect'),
@@ -28,8 +31,24 @@ export default function Header() {
     return () => clearInterval(interval)
   }, [infoItems.length])
 
+  // Close user menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element
+      if (showUserMenu && !target.closest('.user-menu')) {
+        setShowUserMenu(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showUserMenu])
+
   const handleSignOut = async () => {
     await signOut()
+    setShowUserMenu(false)
   }
 
   const getUserDisplayName = () => {
@@ -68,13 +87,16 @@ export default function Header() {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           {/* Logo */}
           <div className="flex-shrink-0">
-            <h1 className="text-2xl font-bold text-gray-900">ZAFRA</h1>
+            <h1 className="text-2xl font-bold text-gray-900 cursor-pointer" onClick={() => router.push('/')}>ZAFRA</h1>
           </div>
 
           {/* Navigation Links */}
           <nav className="hidden md:flex items-center space-x-8">
             <a href="/" className="text-gray-700 hover:text-gray-900 font-medium">
               {t('nav.home')}
+            </a>
+            <a href="/new-arrivals" className="text-gray-700 hover:text-gray-900 font-medium">
+              New Arrivals
             </a>
             <a href="/perfumes" className="text-gray-700 hover:text-gray-900 font-medium">
               All Perfumes
@@ -128,18 +150,34 @@ export default function Header() {
 
             {/* User Menu */}
             {user ? (
-              <div className="flex items-center space-x-2">
-                <div className="flex items-center space-x-2 text-gray-700">
+              <div className="relative user-menu">
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none"
+                >
                   <User className="w-6 h-6" />
                   <span className="hidden lg:block font-medium">{getUserDisplayName()}</span>
-                </div>
-                <button 
-                  onClick={handleSignOut}
-                  className="flex items-center space-x-1 text-gray-500 hover:text-gray-700"
-                  title="Sign Out"
-                >
-                  <LogOut className="w-4 h-4" />
                 </button>
+                
+                {showUserMenu && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+                    <button
+                      onClick={() => router.push('/profile')}
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                     // onClick={() => setShowUserMenu(false)}
+                    >
+                      <Settings className="w-4 h-4 mr-3" />
+                      My Profile
+                    </button>
+                    <button
+                      onClick={handleSignOut}
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      <LogOut className="w-4 h-4 mr-3" />
+                      Sign Out
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <button 

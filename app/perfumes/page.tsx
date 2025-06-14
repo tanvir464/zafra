@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { usePerfume } from '@/contexts/PerfumeContext'
+import { useRouter } from 'next/navigation'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { Perfume } from '@/types'
@@ -11,6 +12,7 @@ import { PerfumeService } from '@/lib/perfumeService'
 export default function AllPerfumesPage() {
   const { t } = useLanguage()
   const { addToCart, addToWishlist, removeFromWishlist, isInWishlist } = usePerfume()
+  const router = useRouter()
   const [perfumes, setPerfumes] = useState<Perfume[]>([])
   const [filteredPerfumes, setFilteredPerfumes] = useState<Perfume[]>([])
   const [loading, setLoading] = useState(true)
@@ -75,7 +77,8 @@ export default function AllPerfumesPage() {
     setFilteredPerfumes(filtered)
   }, [perfumes, searchQuery, selectedCategory, sortBy])
 
-  const handleAddToWishlist = async (perfumeId: string) => {
+  const handleAddToWishlist = async (perfumeId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
     if (isInWishlist(perfumeId)) {
       await removeFromWishlist(perfumeId)
     } else {
@@ -83,8 +86,13 @@ export default function AllPerfumesPage() {
     }
   }
 
-  const handleAddToCart = async (perfumeId: string) => {
+  const handleAddToCart = async (perfumeId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
     await addToCart(perfumeId, 1)
+  }
+
+  const handlePerfumeClick = (perfumeId: string) => {
+    router.push(`/perfumes/${perfumeId}`)
   }
 
   const formatPrice = (price: number) => {
@@ -199,7 +207,11 @@ export default function AllPerfumesPage() {
         {filteredPerfumes.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredPerfumes.map((perfume) => (
-              <div key={perfume.id} className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+              <div 
+                key={perfume.id} 
+                className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105"
+                onClick={() => handlePerfumeClick(perfume.id)}
+              >
                 <div className="relative">
                   <img
                     src={perfume.image_url}
@@ -207,7 +219,7 @@ export default function AllPerfumesPage() {
                     className="w-full h-64 object-cover"
                   />
                   <button
-                    onClick={() => handleAddToWishlist(perfume.id)}
+                    onClick={(e) => handleAddToWishlist(perfume.id, e)}
                     className={`absolute top-2 right-2 p-2 rounded-full ${
                       isInWishlist(perfume.id)
                         ? 'bg-red-500 text-white'
@@ -253,7 +265,7 @@ export default function AllPerfumesPage() {
                   </div>
                   
                   <button
-                    onClick={() => handleAddToCart(perfume.id)}
+                    onClick={(e) => handleAddToCart(perfume.id, e)}
                     className="w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 transition-colors"
                   >
                     Add to Cart
