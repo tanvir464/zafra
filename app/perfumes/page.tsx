@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { usePerfume } from '@/contexts/PerfumeContext'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { Perfume } from '@/types'
@@ -9,6 +10,7 @@ import { PerfumeService } from '@/lib/perfumeService'
 
 export default function AllPerfumesPage() {
   const { t } = useLanguage()
+  const { addToCart, addToWishlist, removeFromWishlist, isInWishlist } = usePerfume()
   const [perfumes, setPerfumes] = useState<Perfume[]>([])
   const [filteredPerfumes, setFilteredPerfumes] = useState<Perfume[]>([])
   const [loading, setLoading] = useState(true)
@@ -16,7 +18,6 @@ export default function AllPerfumesPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [sortBy, setSortBy] = useState('newest')
-  const [wishlistItems, setWishlistItems] = useState<string[]>([])
 
   useEffect(() => {
     const fetchPerfumes = async () => {
@@ -74,17 +75,16 @@ export default function AllPerfumesPage() {
     setFilteredPerfumes(filtered)
   }, [perfumes, searchQuery, selectedCategory, sortBy])
 
-  const handleAddToWishlist = (perfumeId: string) => {
-    if (wishlistItems.includes(perfumeId)) {
-      setWishlistItems(prev => prev.filter(id => id !== perfumeId))
+  const handleAddToWishlist = async (perfumeId: string) => {
+    if (isInWishlist(perfumeId)) {
+      await removeFromWishlist(perfumeId)
     } else {
-      setWishlistItems(prev => [...prev, perfumeId])
+      await addToWishlist(perfumeId)
     }
   }
 
-  const handleAddToCart = (perfumeId: string) => {
-    // In a real app, this would make an API call
-    alert('Added to cart!')
+  const handleAddToCart = async (perfumeId: string) => {
+    await addToCart(perfumeId, 1)
   }
 
   const formatPrice = (price: number) => {
@@ -150,7 +150,7 @@ export default function AllPerfumesPage() {
                   placeholder="Search by name or brand..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 text-black"
                 />
               </div>
 
@@ -160,7 +160,7 @@ export default function AllPerfumesPage() {
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 text-black"
                 >
                   <option value="all">All Categories</option>
                   <option value="men">Men</option>
@@ -175,7 +175,7 @@ export default function AllPerfumesPage() {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 text-black"
                 >
                   <option value="newest">Newest First</option>
                   <option value="price-low">Price: Low to High</option>
@@ -186,9 +186,9 @@ export default function AllPerfumesPage() {
               </div>
 
               {/* Results Count */}
-              <div className="flex items-end">
-                <p className="text-sm text-gray-600">
-                  {filteredPerfumes.length} perfume{filteredPerfumes.length !== 1 ? 's' : ''} found
+              <div className="flex items-center justify-end">
+                <p className="text-sm text-gray-600 font-bold ">
+                  <sup className='text-purple-600 font-bold'>*</sup>{filteredPerfumes.length} perfume{filteredPerfumes.length !== 1 ? 's' : ''} found
                 </p>
               </div>
             </div>
@@ -209,7 +209,7 @@ export default function AllPerfumesPage() {
                   <button
                     onClick={() => handleAddToWishlist(perfume.id)}
                     className={`absolute top-2 right-2 p-2 rounded-full ${
-                      wishlistItems.includes(perfume.id)
+                      isInWishlist(perfume.id)
                         ? 'bg-red-500 text-white'
                         : 'bg-white text-gray-600 hover:bg-gray-100'
                     }`}

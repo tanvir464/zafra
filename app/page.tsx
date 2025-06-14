@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { usePerfume } from '@/contexts/PerfumeContext'
 import Header from '@/components/Header'
 import BannerCarousel from '@/components/BannerCarousel'
 import PerfumeSection from '@/components/PerfumeSection'
@@ -11,8 +12,7 @@ import { PerfumeService } from '@/lib/perfumeService'
 
 export default function HomePage() {
   const { t } = useLanguage()
-  const [wishlistItems, setWishlistItems] = useState<string[]>([])
-  const [cartItems, setCartItems] = useState<string[]>([])
+  const { addToCart, addToWishlist, removeFromWishlist, isInWishlist } = usePerfume()
   const [allPerfumes, setAllPerfumes] = useState<Perfume[]>([])
   const [featuredPerfumes, setFeaturedPerfumes] = useState<Perfume[]>([])
   const [newArrivals, setNewArrivals] = useState<Perfume[]>([])
@@ -59,19 +59,15 @@ export default function HomePage() {
   }, [])
 
   const handleAddToWishlist = async (perfumeId: string) => {
-    // In a real app, this would make an API call
-    if (wishlistItems.includes(perfumeId)) {
-      setWishlistItems(prev => prev.filter(id => id !== perfumeId))
+    if (isInWishlist(perfumeId)) {
+      await removeFromWishlist(perfumeId)
     } else {
-      setWishlistItems(prev => [...prev, perfumeId])
+      await addToWishlist(perfumeId)
     }
   }
 
   const handleAddToCart = async (perfumeId: string) => {
-    // In a real app, this would make an API call
-    setCartItems(prev => [...prev, perfumeId])
-    // Show success notification
-    alert('Added to cart!')
+    await addToCart(perfumeId, 1)
   }
 
   if (loading) {
@@ -128,7 +124,7 @@ export default function HomePage() {
               perfumes={featuredPerfumes}
               onAddToWishlist={handleAddToWishlist}
               onAddToCart={handleAddToCart}
-              wishlistItems={wishlistItems}
+              wishlistItems={featuredPerfumes.map(p => p.id).filter(id => isInWishlist(id))}
             />
           )}
 
@@ -139,7 +135,7 @@ export default function HomePage() {
               perfumes={newArrivals}
               onAddToWishlist={handleAddToWishlist}
               onAddToCart={handleAddToCart}
-              wishlistItems={wishlistItems}
+              wishlistItems={newArrivals.map(p => p.id).filter(id => isInWishlist(id))}
             />
           )}
 
@@ -150,7 +146,7 @@ export default function HomePage() {
               perfumes={bestSellers}
               onAddToWishlist={handleAddToWishlist}
               onAddToCart={handleAddToCart}
-              wishlistItems={wishlistItems}
+              wishlistItems={bestSellers.map(p => p.id).filter(id => isInWishlist(id))}
             />
           )}
 
@@ -161,7 +157,7 @@ export default function HomePage() {
               perfumes={exclusiveCollection}
               onAddToWishlist={handleAddToWishlist}
               onAddToCart={handleAddToCart}
-              wishlistItems={wishlistItems}
+              wishlistItems={exclusiveCollection.map(p => p.id).filter(id => isInWishlist(id))}
             />
           )}
 

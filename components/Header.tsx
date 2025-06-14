@@ -3,12 +3,14 @@
 import React, { useState, useEffect } from 'react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useAuth } from '@/contexts/AuthContext'
+import { usePerfume } from '@/contexts/PerfumeContext'
 import { Search, Heart, ShoppingCart, User, Globe, LogOut } from 'lucide-react'
 import AuthModal from './AuthModal'
 
 export default function Header() {
   const { language, setLanguage, t } = useLanguage()
   const { user, signOut } = useAuth()
+  const { getCartItemCount, wishlistItems } = usePerfume()
   const [currentInfoIndex, setCurrentInfoIndex] = useState(0)
   const [showAuthModal, setShowAuthModal] = useState(false)
 
@@ -103,26 +105,26 @@ export default function Header() {
           {/* Right Icons */}
           <div className="flex items-center space-x-6">
             {/* Wishlist */}
-            <button className="relative group">
+            <a href="/wishlist" className="relative group">
               <Heart className="w-6 h-6 text-gray-700 group-hover:text-gray-900" />
               <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                0
+                {wishlistItems.length}
               </span>
               <span className="hidden group-hover:block absolute top-8 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded">
                 {t('wishlist')}
               </span>
-            </button>
+            </a>
 
             {/* Cart */}
-            <button className="relative group">
+            <a href="/cart" className="relative group">
               <ShoppingCart className="w-6 h-6 text-gray-700 group-hover:text-gray-900" />
               <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                0
+                {getCartItemCount()}
               </span>
               <span className="hidden group-hover:block absolute top-8 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded">
                 {t('cart')}
               </span>
-            </button>
+            </a>
 
             {/* User Menu */}
             {user ? (
