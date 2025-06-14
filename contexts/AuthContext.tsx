@@ -61,7 +61,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!error && data.user) {
       await supabase.from('users').insert({
         id: data.user.id,
+        email: email,
         name: name,
+        role: 'user',
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       })
     }
 
