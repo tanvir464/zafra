@@ -7,102 +7,56 @@ import BannerCarousel from '@/components/BannerCarousel'
 import PerfumeSection from '@/components/PerfumeSection'
 import Footer from '@/components/Footer'
 import { Perfume } from '@/types'
-
-// Mock data for demonstration
-const mockPerfumes: Perfume[] = [
-  {
-    id: '1',
-    name: 'Chanel No. 5 Eau de Parfum',
-    brand: 'Chanel',
-    description: 'The iconic fragrance',
-    price: 8500,
-    discount_price: 7500,
-    image_url: 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=400&h=400&fit=crop',
-    category: 'women',
-    stock: 10,
-    featured: true,
-    created_at: '2024-01-01',
-    updated_at: '2024-01-01'
-  },
-  {
-    id: '2',
-    name: 'Dior Sauvage Eau de Toilette',
-    brand: 'Dior',
-    description: 'Fresh and masculine',
-    price: 6500,
-    image_url: 'https://images.unsplash.com/photo-1747916148827-d5fb453bb978?w=400&h=400&fit=crop',
-    category: 'men',
-    stock: 15,
-    featured: true,
-    created_at: '2024-01-01',
-    updated_at: '2024-01-01'
-  },
-  {
-    id: '3',
-    name: 'Tom Ford Black Orchid',
-    brand: 'Tom Ford',
-    description: 'Luxurious and mysterious',
-    price: 12000,
-    discount_price: 10500,
-    image_url: 'https://images.unsplash.com/photo-1618261325436-dc799dca3874?w=400&h=400&fit=crop',
-    category: 'unisex',
-    stock: 8,
-    featured: false,
-    created_at: '2024-01-01',
-    updated_at: '2024-01-01'
-  },
-  {
-    id: '4',
-    name: 'Versace Bright Crystal',
-    brand: 'Versace',
-    description: 'Fresh and floral',
-    price: 4500,
-    image_url: 'https://images.unsplash.com/photo-1563170351-be82bc888aa4?w=400&h=400&fit=crop',
-    category: 'women',
-    stock: 12,
-    featured: false,
-    created_at: '2024-01-01',
-    updated_at: '2024-01-01'
-  },
-  {
-    id: '5',
-    name: 'Armani Code Men',
-    brand: 'Giorgio Armani',
-    description: 'Sophisticated and seductive',
-    price: 5500,
-    discount_price: 4800,
-    image_url: 'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=400&h=400&fit=crop',
-    category: 'men',
-    stock: 20,
-    featured: true,
-    created_at: '2024-01-01',
-    updated_at: '2024-01-01'
-  },
-  {
-    id: '6',
-    name: 'Marc Jacobs Daisy',
-    brand: 'Marc Jacobs',
-    description: 'Youthful and feminine',
-    price: 3800,
-    image_url: 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=400&h=400&fit=crop',
-    category: 'women',
-    stock: 18,
-    featured: false,
-    created_at: '2024-01-01',
-    updated_at: '2024-01-01'
-  }
-]
+import { PerfumeService } from '@/lib/perfumeService'
 
 export default function HomePage() {
   const { t } = useLanguage()
   const [wishlistItems, setWishlistItems] = useState<string[]>([])
   const [cartItems, setCartItems] = useState<string[]>([])
+  const [allPerfumes, setAllPerfumes] = useState<Perfume[]>([])
+  const [featuredPerfumes, setFeaturedPerfumes] = useState<Perfume[]>([])
+  const [newArrivals, setNewArrivals] = useState<Perfume[]>([])
+  const [bestSellers, setBestSellers] = useState<Perfume[]>([])
+  const [exclusiveCollection, setExclusiveCollection] = useState<Perfume[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // Filter perfumes by categories
-  const featuredPerfumes = mockPerfumes.filter(p => p.featured)
-  const newArrivals = mockPerfumes.slice(0, 4)
-  const bestSellers = mockPerfumes.filter(p => p.discount_price).slice(0, 4)
-  const exclusiveCollection = mockPerfumes.filter(p => p.price > 10000)
+  useEffect(() => {
+    const fetchPerfumes = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+
+        // Fetch all perfumes
+        const allPerfumesData = await PerfumeService.getAllPerfumes()
+        setAllPerfumes(allPerfumesData)
+
+        // Fetch featured perfumes
+        const featuredData = await PerfumeService.getFeaturedPerfumes()
+        setFeaturedPerfumes(featuredData)
+
+        // Get new arrivals (latest 4 perfumes)
+        const newArrivalsData = allPerfumesData.slice(0, 4)
+        setNewArrivals(newArrivalsData)
+
+        // Fetch discounted perfumes for best sellers
+        const discountedData = await PerfumeService.getDiscountedPerfumes()
+        setBestSellers(discountedData.slice(0, 4))
+
+        // Fetch exclusive collection
+        const exclusiveData = await PerfumeService.getExclusivePerfumes()
+        setExclusiveCollection(exclusiveData)
+
+      } catch (err) {
+        console.error('Error fetching perfumes:', err)
+        setError('Failed to load perfumes. Please try again later.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchPerfumes()
+  }, [])
 
   const handleAddToWishlist = async (perfumeId: string) => {
     // In a real app, this would make an API call
@@ -120,6 +74,41 @@ export default function HomePage() {
     alert('Added to cart!')
   }
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading perfumes...</p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <p className="text-red-600 mb-4">{error}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -133,31 +122,37 @@ export default function HomePage() {
         {/* Perfume Sections */}
         <div className="max-w-7xl mx-auto px-4 py-8">
           {/* Featured Products */}
-          <PerfumeSection
-            title={t('featured')}
-            perfumes={featuredPerfumes}
-            onAddToWishlist={handleAddToWishlist}
-            onAddToCart={handleAddToCart}
-            wishlistItems={wishlistItems}
-          />
+          {featuredPerfumes.length > 0 && (
+            <PerfumeSection
+              title={t('featured')}
+              perfumes={featuredPerfumes}
+              onAddToWishlist={handleAddToWishlist}
+              onAddToCart={handleAddToCart}
+              wishlistItems={wishlistItems}
+            />
+          )}
 
           {/* New Arrivals */}
-          <PerfumeSection
-            title={t('new_arrivals')}
-            perfumes={newArrivals}
-            onAddToWishlist={handleAddToWishlist}
-            onAddToCart={handleAddToCart}
-            wishlistItems={wishlistItems}
-          />
+          {newArrivals.length > 0 && (
+            <PerfumeSection
+              title={t('new_arrivals')}
+              perfumes={newArrivals}
+              onAddToWishlist={handleAddToWishlist}
+              onAddToCart={handleAddToCart}
+              wishlistItems={wishlistItems}
+            />
+          )}
 
           {/* Best Sellers */}
-          <PerfumeSection
-            title={t('best_sellers')}
-            perfumes={bestSellers}
-            onAddToWishlist={handleAddToWishlist}
-            onAddToCart={handleAddToCart}
-            wishlistItems={wishlistItems}
-          />
+          {bestSellers.length > 0 && (
+            <PerfumeSection
+              title={t('best_sellers')}
+              perfumes={bestSellers}
+              onAddToWishlist={handleAddToWishlist}
+              onAddToCart={handleAddToCart}
+              wishlistItems={wishlistItems}
+            />
+          )}
 
           {/* Exclusive Collection */}
           {exclusiveCollection.length > 0 && (
@@ -169,6 +164,19 @@ export default function HomePage() {
               wishlistItems={wishlistItems}
             />
           )}
+
+          {/* View All Perfumes Link */}
+          <div className="text-center py-8">
+            <a
+              href="/perfumes"
+              className="inline-flex items-center px-6 py-3 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              View All Perfumes
+              <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg>
+            </a>
+          </div>
         </div>
       </main>
 

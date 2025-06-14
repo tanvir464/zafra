@@ -74,6 +74,9 @@ export default function Header() {
             <a href="/" className="text-gray-700 hover:text-gray-900 font-medium">
               {t('nav.home')}
             </a>
+            <a href="/perfumes" className="text-gray-700 hover:text-gray-900 font-medium">
+              All Perfumes
+            </a>
             <a href="/popular" className="text-gray-700 hover:text-gray-900 font-medium">
               {t('nav.popular')}
             </a>
