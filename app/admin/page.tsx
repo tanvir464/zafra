@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { 
   TrendingUp, 
   Users, 
@@ -12,151 +12,178 @@ import {
   ArrowRight,
   Calendar,
   Clock,
-  Star
+  Star,
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react'
-
-const stats = [
-  {
-    name: 'Total Revenue',
-    value: '৳2,45,000',
-    change: '+12.5%',
-    icon: DollarSign,
-    color: 'text-green-600',
-    bgColor: 'bg-green-50'
-  },
-  {
-    name: 'Total Orders',
-    value: '1,234',
-    change: '+8.2%',
-    icon: ShoppingCart,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50'
-  },
-  {
-    name: 'Total Products',
-    value: '456',
-    change: '+3.1%',
-    icon: Package,
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-50'
-  },
-  {
-    name: 'Total Users',
-    value: '2,345',
-    change: '+15.3%',
-    icon: Users,
-    color: 'text-orange-600',
-    bgColor: 'bg-orange-50'
-  }
-]
-
-const recentOrders = [
-  {
-    id: '#12345',
-    customer: 'John Doe',
-    product: 'Chanel No. 5',
-    amount: '৳7,500',
-    status: 'Pending',
-    date: '2024-01-15',
-    time: '10:30 AM'
-  },
-  {
-    id: '#12346',
-    customer: 'Jane Smith',
-    product: 'Dior Sauvage',
-    amount: '৳6,500',
-    status: 'Shipped',
-    date: '2024-01-15',
-    time: '09:15 AM'
-  },
-  {
-    id: '#12347',
-    customer: 'Mike Johnson',
-    product: 'Tom Ford Black Orchid',
-    amount: '৳10,500',
-    status: 'Delivered',
-    date: '2024-01-14',
-    time: '03:45 PM'
-  },
-  {
-    id: '#12348',
-    customer: 'Sarah Wilson',
-    product: 'YSL Black Opium',
-    amount: '৳8,500',
-    status: 'Pending',
-    date: '2024-01-14',
-    time: '02:20 PM'
-  }
-]
-
-const topProducts = [
-  {
-    name: 'Chanel No. 5',
-    sales: 89,
-    revenue: '৳6,67,500',
-    rating: 4.8,
-    image: '/api/placeholder/60/60'
-  },
-  {
-    name: 'Dior Sauvage',
-    sales: 67,
-    revenue: '৳4,35,500',
-    rating: 4.6,
-    image: '/api/placeholder/60/60'
-  },
-  {
-    name: 'Tom Ford Black Orchid',
-    sales: 45,
-    revenue: '৳4,72,500',
-    rating: 4.9,
-    image: '/api/placeholder/60/60'
-  },
-  {
-    name: 'YSL Black Opium',
-    sales: 38,
-    revenue: '৳3,23,000',
-    rating: 4.7,
-    image: '/api/placeholder/60/60'
-  }
-]
-
-const quickActions = [
-  {
-    title: 'Add New Product',
-    description: 'Create a new perfume listing',
-    icon: Plus,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50',
-    href: '/admin/products'
-  },
-  {
-    title: 'Manage Banners',
-    description: 'Update homepage banners',
-    icon: Eye,
-    color: 'text-green-600',
-    bgColor: 'bg-green-50',
-    href: '/admin/banners'
-  },
-  {
-    title: 'Process Orders',
-    description: 'Review pending orders',
-    icon: ShoppingCart,
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-50',
-    href: '/admin/orders'
-  },
-  {
-    title: 'Manage Users',
-    description: 'View and manage user accounts',
-    icon: Users,
-    color: 'text-orange-600',
-    bgColor: 'bg-orange-50',
-    href: '/admin/users'
-  }
-]
+import { AdminService, DashboardStats, RecentOrder, TopProduct } from '@/lib/adminService'
 
 export default function AdminDashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState('7d')
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([])
+  const [topProducts, setTopProducts] = useState<TopProduct[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetchDashboardData()
+  }, [selectedPeriod])
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      // Fetch all data in parallel
+      const [statsData, ordersData, productsData] = await Promise.all([
+        AdminService.getDashboardStats(),
+        AdminService.getRecentOrders(5),
+        AdminService.getTopProducts(4)
+      ])
+
+      setStats(statsData)
+      setRecentOrders(ordersData)
+      setTopProducts(productsData)
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err)
+      setError('Failed to load dashboard data. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-BD', {
+      style: 'currency',
+      currency: 'BDT',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount)
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800'
+      case 'confirmed':
+        return 'bg-blue-100 text-blue-800'
+      case 'shipped':
+        return 'bg-purple-100 text-purple-800'
+      case 'delivered':
+        return 'bg-green-100 text-green-800'
+      case 'cancelled':
+        return 'bg-red-100 text-red-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  const quickActions = [
+    {
+      title: 'Add New Product',
+      description: 'Create a new perfume listing',
+      icon: Plus,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50',
+      href: '/admin/products'
+    },
+    {
+      title: 'Manage Banners',
+      description: 'Update homepage banners',
+      icon: Eye,
+      color: 'text-green-600',
+      bgColor: 'bg-green-50',
+      href: '/admin/banners'
+    },
+    {
+      title: 'Process Orders',
+      description: 'Review pending orders',
+      icon: ShoppingCart,
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-50',
+      href: '/admin/orders'
+    },
+    {
+      title: 'Manage Users',
+      description: 'View and manage user accounts',
+      icon: Users,
+      color: 'text-orange-600',
+      bgColor: 'bg-orange-50',
+      href: '/admin/users'
+    }
+  ]
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <RefreshCw className="w-8 h-8 text-purple-600 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading dashboard data...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <AlertCircle className="w-8 h-8 text-red-600 mx-auto mb-4" />
+          <p className="text-red-600 mb-4">{error}</p>
+          <button 
+            onClick={fetchDashboardData} 
+            className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  const statsData = [
+    {
+      name: 'Total Revenue',
+      value: formatCurrency(stats?.totalRevenue || 0),
+      change: '+12.5%',
+      icon: DollarSign,
+      color: 'text-green-600',
+      bgColor: 'bg-green-50'
+    },
+    {
+      name: 'Total Orders',
+      value: stats?.totalOrders.toString() || '0',
+      change: '+8.2%',
+      icon: ShoppingCart,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50'
+    },
+    {
+      name: 'Total Products',
+      value: stats?.totalProducts.toString() || '0',
+      change: '+3.1%',
+      icon: Package,
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-50'
+    },
+    {
+      name: 'Total Users',
+      value: stats?.totalUsers.toString() || '0',
+      change: '+15.3%',
+      icon: Users,
+      color: 'text-orange-600',
+      bgColor: 'bg-orange-50'
+    }
+  ]
 
   return (
     <div className="space-y-6">
@@ -168,23 +195,30 @@ export default function AdminDashboard() {
         </div>
         
         {/* Period Selector */}
-        <div className="mt-4 sm:mt-0">
+        <div className="mt-4 sm:mt-0 flex items-center space-x-3">
           <select
             value={selectedPeriod}
             onChange={(e) => setSelectedPeriod(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm text-gray-900"
           >
             <option value="7d">Last 7 days</option>
             <option value="30d">Last 30 days</option>
             <option value="90d">Last 90 days</option>
             <option value="1y">Last year</option>
           </select>
+          <button
+            onClick={fetchDashboardData}
+            className="p-2 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100"
+            title="Refresh data"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        {stats.map((stat) => {
+        {statsData.map((stat) => {
           const Icon = stat.icon
           return (
             <div key={stat.name} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-shadow duration-200">
@@ -222,35 +256,37 @@ export default function AdminDashboard() {
               </div>
             </div>
             <div className="p-4 sm:p-6">
-              <div className="space-y-4">
-                {recentOrders.map((order) => (
-                  <div key={order.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                        <ShoppingCart className="w-5 h-5 text-purple-600" />
+              {recentOrders.length === 0 ? (
+                <div className="text-center py-8">
+                  <ShoppingCart className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">No orders found</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {recentOrders.map((order) => (
+                    <div key={order.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                          <ShoppingCart className="w-5 h-5 text-purple-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{order.user_name}</p>
+                          <p className="text-sm text-gray-600">{order.user_email}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{order.customer}</p>
-                        <p className="text-sm text-gray-600">{order.product}</p>
+                      <div className="text-right">
+                        <p className="font-medium text-gray-900">{formatCurrency(order.total_amount)}</p>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
+                            {order.status}
+                          </span>
+                          <span className="text-xs text-gray-500">{formatDate(order.created_at)}</span>
+                        </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-medium text-gray-900">{order.amount}</p>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          order.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                          order.status === 'Shipped' ? 'bg-blue-100 text-blue-800' :
-                          order.status === 'Delivered' ? 'bg-green-100 text-green-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {order.status}
-                        </span>
-                        <span className="text-xs text-gray-500">{order.date}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -262,26 +298,33 @@ export default function AdminDashboard() {
               <h2 className="text-lg font-semibold text-gray-900">Top Products</h2>
             </div>
             <div className="p-4 sm:p-6">
-              <div className="space-y-4">
-                {topProducts.map((product, index) => (
-                  <div key={product.name} className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-medium text-purple-600">{index + 1}</span>
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900">{product.name}</p>
-                      <p className="text-sm text-gray-600">{product.sales} sales</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-medium text-gray-900">{product.revenue}</p>
-                      <div className="flex items-center">
-                        <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                        <span className="text-xs text-gray-600 ml-1">{product.rating}</span>
+              {topProducts.length === 0 ? (
+                <div className="text-center py-8">
+                  <Package className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">No products found</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {topProducts.map((product, index) => (
+                    <div key={product.id} className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                        <span className="text-sm font-medium text-purple-600">{index + 1}</span>
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900">{product.name}</p>
+                        <p className="text-sm text-gray-600">{product.brand}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium text-gray-900">{formatCurrency(product.revenue)}</p>
+                        <div className="flex items-center">
+                          <ShoppingCart className="w-3 h-3 text-gray-400" />
+                          <span className="text-xs text-gray-600 ml-1">{product.total_sales} sold</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

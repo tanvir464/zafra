@@ -85,6 +85,17 @@ CREATE TABLE public.order_items (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Admin notifications table
+CREATE TABLE public.admin_notifications (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  type TEXT NOT NULL CHECK (type IN ('order', 'product', 'user', 'system', 'stock', 'revenue')),
+  title TEXT NOT NULL,
+  message TEXT NOT NULL,
+  is_read BOOLEAN DEFAULT FALSE,
+  data JSONB,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Insert sample data
 INSERT INTO public.perfumes (name, brand, description, price, discount_price, image_url, category, stock, featured) VALUES
 ('Chanel No. 5 Eau de Parfum', 'Chanel', 'The iconic fragrance', 8500.00, 7500.00, 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=400&h=400&fit=crop', 'women', 10, true),
@@ -93,6 +104,36 @@ INSERT INTO public.perfumes (name, brand, description, price, discount_price, im
 ('Versace Bright Crystal', 'Versace', 'Fresh and floral', 4500.00, NULL, 'https://images.unsplash.com/photo-1563170351-be82bc888aa4?w=400&h=400&fit=crop', 'women', 12, false),
 ('Armani Code Men', 'Giorgio Armani', 'Sophisticated and seductive', 5500.00, 4800.00, 'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=400&h=400&fit=crop', 'men', 20, true),
 ('Marc Jacobs Daisy', 'Marc Jacobs', 'Youthful and feminine', 3800.00, NULL, 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=400&h=400&fit=crop', 'women', 18, false);
+
+-- Insert sample users (you'll need to create these users in auth.users first)
+-- Note: Replace the UUIDs with actual auth.users IDs from your Supabase project
+INSERT INTO public.users (id, email, phone, name, address) VALUES
+('11111111-1111-1111-1111-111111111111', 'john.doe@example.com', '+8801712345678', 'John Doe', 'Dhaka, Bangladesh'),
+('22222222-2222-2222-2222-222222222222', 'jane.smith@example.com', '+8801812345678', 'Jane Smith', 'Chittagong, Bangladesh'),
+('33333333-3333-3333-3333-333333333333', 'mike.johnson@example.com', '+8801912345678', 'Mike Johnson', 'Sylhet, Bangladesh');
+
+-- Insert sample orders
+INSERT INTO public.orders (id, user_id, total_amount, payment_method, status, shipping_address, phone, name) VALUES
+('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '11111111-1111-1111-1111-111111111111', 7500.00, 'cod', 'delivered', 'House 123, Road 12, Dhaka', '+8801712345678', 'John Doe'),
+('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '22222222-2222-2222-2222-222222222222', 6500.00, 'bkash', 'shipped', 'House 456, Road 15, Chittagong', '+8801812345678', 'Jane Smith'),
+('cccccccc-cccc-cccc-cccc-cccccccccccc', '33333333-3333-3333-3333-333333333333', 10500.00, 'sslcommerz', 'pending', 'House 789, Road 18, Sylhet', '+8801912345678', 'Mike Johnson'),
+('dddddddd-dddd-dddd-dddd-dddddddddddd', '11111111-1111-1111-1111-111111111111', 4800.00, 'cod', 'confirmed', 'House 123, Road 12, Dhaka', '+8801712345678', 'John Doe');
+
+-- Insert sample order items
+INSERT INTO public.order_items (order_id, perfume_id, quantity, price) VALUES
+('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', (SELECT id FROM public.perfumes WHERE name = 'Chanel No. 5 Eau de Parfum' LIMIT 1), 1, 7500.00),
+('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', (SELECT id FROM public.perfumes WHERE name = 'Dior Sauvage Eau de Toilette' LIMIT 1), 1, 6500.00),
+('cccccccc-cccc-cccc-cccc-cccccccccccc', (SELECT id FROM public.perfumes WHERE name = 'Tom Ford Black Orchid' LIMIT 1), 1, 10500.00),
+('dddddddd-dddd-dddd-dddd-dddddddddddd', (SELECT id FROM public.perfumes WHERE name = 'Armani Code Men' LIMIT 1), 1, 4800.00);
+
+-- Insert sample notifications
+INSERT INTO public.admin_notifications (type, title, message, is_read, data) VALUES
+('order', 'New Order Received', 'Order #aaaaaaaa received from John Doe for ৳7,500', false, '{"order_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"}'),
+('order', 'New Order Received', 'Order #bbbbbbbb received from Jane Smith for ৳6,500', false, '{"order_id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"}'),
+('stock', 'Low Stock Alert', 'Tom Ford Black Orchid is running low on stock (8 units remaining)', false, '{"product_id": "product-id", "current_stock": 8}'),
+('revenue', 'High Revenue Alert', 'High revenue milestone reached: ৳29,300', false, '{"amount": 29300}'),
+('system', 'System Update', 'Database backup completed successfully', true, '{"backup_id": "backup-123"}'),
+('product', 'New Product Added', 'Marc Jacobs Daisy has been added to the catalog', true, '{"product_id": "product-id"}');
 
 INSERT INTO public.banners (title, image_url, link, active, order_position) VALUES
 ('Luxury Perfumes Collection', 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=1200&h=400&fit=crop', '/collection/luxury', true, 1),
@@ -131,6 +172,29 @@ CREATE POLICY "Users can view own order items" ON public.order_items FOR SELECT 
 -- Public read access for products and banners
 CREATE POLICY "Anyone can view perfumes" ON public.perfumes FOR SELECT USING (true);
 CREATE POLICY "Anyone can view active banners" ON public.banners FOR SELECT USING (active = true);
+
+-- Admin policies (for admin dashboard access)
+-- Note: You'll need to create an admin role and assign it to admin users
+-- For now, we'll create policies that allow access to all data
+-- In production, you should restrict these to admin users only
+
+-- Admin can view all users
+CREATE POLICY "Admin can view all users" ON public.users FOR SELECT USING (true);
+
+-- Admin can view all orders
+CREATE POLICY "Admin can view all orders" ON public.orders FOR SELECT USING (true);
+
+-- Admin can view all order items
+CREATE POLICY "Admin can view all order items" ON public.order_items FOR SELECT USING (true);
+
+-- Admin can manage all banners
+CREATE POLICY "Admin can manage banners" ON public.banners FOR ALL USING (true);
+
+-- Admin can manage all perfumes
+CREATE POLICY "Admin can manage perfumes" ON public.perfumes FOR ALL USING (true);
+
+-- Admin can manage all notifications
+CREATE POLICY "Admin can manage notifications" ON public.admin_notifications FOR ALL USING (true);
 
 -- Functions for updated_at timestamps
 CREATE OR REPLACE FUNCTION update_updated_at_column()

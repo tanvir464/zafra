@@ -108,6 +108,29 @@ export interface AdminSettings {
   free_shipping_threshold: number
 }
 
+export interface AdminNotification {
+  id: string
+  type: 'order' | 'product' | 'user' | 'system' | 'stock' | 'revenue'
+  title: string
+  message: string
+  is_read: boolean
+  created_at: string
+  data?: any // Additional data for the notification
+}
+
+export interface NotificationStats {
+  total: number
+  unread: number
+  by_type: {
+    order: number
+    product: number
+    user: number
+    system: number
+    stock: number
+    revenue: number
+  }
+}
+
 export class AdminService {
   // Dashboard
   static async getDashboardStats(): Promise<DashboardStats> {
@@ -164,7 +187,8 @@ export class AdminService {
           total_amount,
           status,
           created_at,
-          users(full_name, email)
+          users(name, email),
+          order_items(id)
         `)
         .order('created_at', { ascending: false })
         .limit(limit)
@@ -174,12 +198,12 @@ export class AdminService {
       return data?.map((order: any) => ({
         id: order.id,
         user_id: order.user_id,
-        user_name: order.users?.full_name || 'Unknown User',
+        user_name: order.users?.name || 'Unknown User',
         user_email: order.users?.email || 'unknown@email.com',
         total_amount: order.total_amount,
         status: order.status,
         created_at: order.created_at,
-        items_count: 0 // You might want to fetch this separately
+        items_count: order.order_items?.length || 0
       })) || []
     } catch (error) {
       console.error('Error fetching recent orders:', error)
@@ -189,22 +213,42 @@ export class AdminService {
 
   static async getTopProducts(limit: number = 5): Promise<TopProduct[]> {
     try {
+      // Get products with their sales data from order_items
       const { data, error } = await supabase
         .from('perfumes')
-        .select('id, name, brand, image_url')
+        .select(`
+          id,
+          name,
+          brand,
+          image_url,
+          order_items(
+            quantity,
+            price
+          )
+        `)
         .order('created_at', { ascending: false })
-        .limit(limit)
 
       if (error) throw error
 
-      return data?.map(product => ({
-        id: product.id,
-        name: product.name,
-        brand: product.brand,
-        total_sales: 0, // You might want to calculate this from order_items
-        revenue: 0, // You might want to calculate this from order_items
-        image_url: product.image_url
-      })) || []
+      // Calculate sales and revenue for each product
+      const productsWithStats = data?.map(product => {
+        const total_sales = product.order_items?.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0) || 0
+        const revenue = product.order_items?.reduce((sum: number, item: any) => sum + ((item.quantity || 0) * (item.price || 0)), 0) || 0
+        
+        return {
+          id: product.id,
+          name: product.name,
+          brand: product.brand,
+          total_sales,
+          revenue,
+          image_url: product.image_url
+        }
+      }) || []
+
+      // Sort by revenue and take top products
+      return productsWithStats
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, limit)
     } catch (error) {
       console.error('Error fetching top products:', error)
       throw error
@@ -273,94 +317,90 @@ export class AdminService {
       throw error
     }
   }
+
   // Orders
   static async getAllOrders(): Promise<Order[]> {
-  try {
-    const { data, error } = await supabase
-      .from('orders')
-      .select(`
-        *,
-        users(name, email),
-        order_items(
-          id,
-          order_id,
-          perfume_id,
-          quantity,
-          price,
-          total_price,
-          perfumes(name, brand, image_url)
-        )
-      `)
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          users(name, email),
+          order_items(
+            id,
+            order_id,
+            perfume_id,
+            quantity,
+            price,
+            total_price,
+            perfumes(name, brand, image_url)
+          )
+        `)
+        .order('created_at', { ascending: false });
 
-    if (error) throw error;
+      if (error) throw error;
 
-    // Ensure data is an array before mapping
-    if (!Array.isArray(data)) return [];
+      // Ensure data is an array before mapping
+      if (!Array.isArray(data)) return [];
 
-    return data.map((order: any) => ({
-      id: order.id ?? '',
-      user_id: order.user_id ?? '',
-      user_name: order.users?.name ?? 'Unknown User',
-      user_email: order.users?.email ?? 'unknown@email.com',
-      total_amount: order.total_amount ?? 0,
-      status: order.status ?? 'pending',
-      payment_status: order.payment_status ?? 'unpaid',
-      shipping_address: order.shipping_address ?? 'No shipping address',
-      billing_address: order.billing_address ?? 'No billing address',
-      created_at: order.created_at ?? '',
-      updated_at: order.updated_at ?? '',
-      items: Array.isArray(order.order_items)
-        ? order.order_items.map((item: any) => ({
-            id: item.id ?? '',
-            order_id: item.order_id ?? '',
-            perfume_id: item.perfume_id ?? '',
-            perfume_name: item.perfumes?.name ?? 'Unknown Product',
-            perfume_brand: item.perfumes?.brand ?? 'Unknown Brand',
-            quantity: item.quantity ?? 0,
-            price: item.price ?? 0,
-            total_price: item.total_price ?? 0,
-            image_url: item.perfumes?.image_url ?? '',
-          }))
-        : [],
-    }));
-  } catch (error) {
-    console.error('Error fetching orders:', error);
-    throw error;
-  }
-}
-
-  
-
-static async updateOrderStatus(id: string, status: string): Promise<void> {
-  try {
-    console.log('AdminService: Updating order status', id, status);
-
-    const { data, error } = await supabase
-      .from('orders')
-      .update({ 
-        status, 
-        updated_at: new Date().toISOString() 
-      })
-      .eq('id', id)
-      .select().single();
-    if (error) 
-    {
-      console.error('Error updating order status:', error)
+      return data.map((order: any) => ({
+        id: order.id ?? '',
+        user_id: order.user_id ?? '',
+        user_name: order.users?.name ?? 'Unknown User',
+        user_email: order.users?.email ?? 'unknown@email.com',
+        total_amount: order.total_amount ?? 0,
+        status: order.status ?? 'pending',
+        payment_status: order.payment_status ?? 'unpaid',
+        shipping_address: order.shipping_address ?? 'No shipping address',
+        billing_address: order.billing_address ?? 'No billing address',
+        created_at: order.created_at ?? '',
+        updated_at: order.updated_at ?? '',
+        items: Array.isArray(order.order_items)
+          ? order.order_items.map((item: any) => ({
+              id: item.id ?? '',
+              order_id: item.order_id ?? '',
+              perfume_id: item.perfume_id ?? '',
+              perfume_name: item.perfumes?.name ?? 'Unknown Product',
+              perfume_brand: item.perfumes?.brand ?? 'Unknown Brand',
+              quantity: item.quantity ?? 0,
+              price: item.price ?? 0,
+              total_price: item.total_price ?? 0,
+              image_url: item.perfumes?.image_url ?? '',
+            }))
+          : [],
+      }));
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      throw error;
     }
-    if (!data) 
-    {
-      console.error('No data returned from update query')
-    }
-    return;
-  } catch (error) {
-    console.error('Error updating order status:', error);
-    throw error;
   }
-}
 
+  static async updateOrderStatus(id: string, status: string): Promise<void> {
+    try {
+      console.log('AdminService: Updating order status', id, status);
 
-
+      const { data, error } = await supabase
+        .from('orders')
+        .update({ 
+          status, 
+          updated_at: new Date().toISOString() 
+        })
+        .eq('id', id)
+        .select().single();
+      if (error) 
+      {
+        console.error('Error updating order status:', error)
+      }
+      if (!data) 
+      {
+        console.error('No data returned from update query')
+      }
+      return;
+    } catch (error) {
+      console.error('Error updating order status:', error);
+      throw error;
+    }
+  }
 
   static async getOrderById(id: string): Promise<Order | null> {
     try {
@@ -535,6 +575,218 @@ static async updateOrderStatus(id: string, status: string): Promise<void> {
       tax_rate: 5,
       shipping_cost: 100,
       free_shipping_threshold: 2000
+    }
+  }
+
+  // Products
+  static async getAllProducts(): Promise<any[]> {
+    try {
+      const { data, error } = await supabase
+        .from('perfumes')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      return data || []
+    } catch (error) {
+      console.error('Error fetching products:', error)
+      throw error
+    }
+  }
+
+  static async createProduct(productData: any): Promise<any> {
+    try {
+      const { data, error } = await supabase
+        .from('perfumes')
+        .insert([productData])
+        .select()
+        .single()
+
+      if (error) throw error
+      return data
+    } catch (error) {
+      console.error('Error creating product:', error)
+      throw error
+    }
+  }
+
+  static async updateProduct(id: string, productData: any): Promise<any> {
+    try {
+      const { data, error } = await supabase
+        .from('perfumes')
+        .update({ ...productData, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (error) throw error
+      return data
+    } catch (error) {
+      console.error('Error updating product:', error)
+      throw error
+    }
+  }
+
+  static async deleteProduct(id: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('perfumes')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+    } catch (error) {
+      console.error('Error deleting product:', error)
+      throw error
+    }
+  }
+
+  // Notifications
+  static async getNotifications(limit: number = 50): Promise<AdminNotification[]> {
+    try {
+      const { data, error } = await supabase
+        .from('admin_notifications')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(limit)
+
+      if (error) throw error
+      return data || []
+    } catch (error) {
+      console.error('Error fetching notifications:', error)
+      throw error
+    }
+  }
+
+  static async getNotificationStats(): Promise<NotificationStats> {
+    try {
+      const { data: notifications, error } = await supabase
+        .from('admin_notifications')
+        .select('type, is_read')
+
+      if (error) throw error
+
+      const total = notifications?.length || 0
+      const unread = notifications?.filter(n => !n.is_read).length || 0
+      
+      const by_type = {
+        order: notifications?.filter(n => n.type === 'order').length || 0,
+        product: notifications?.filter(n => n.type === 'product').length || 0,
+        user: notifications?.filter(n => n.type === 'user').length || 0,
+        system: notifications?.filter(n => n.type === 'system').length || 0,
+        stock: notifications?.filter(n => n.type === 'stock').length || 0,
+        revenue: notifications?.filter(n => n.type === 'revenue').length || 0
+      }
+
+      return { total, unread, by_type }
+    } catch (error) {
+      console.error('Error fetching notification stats:', error)
+      throw error
+    }
+  }
+
+  static async markNotificationAsRead(id: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('admin_notifications')
+        .update({ is_read: true })
+        .eq('id', id)
+
+      if (error) throw error
+    } catch (error) {
+      console.error('Error marking notification as read:', error)
+      throw error
+    }
+  }
+
+  static async markAllNotificationsAsRead(): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('admin_notifications')
+        .update({ is_read: true })
+        .eq('is_read', false)
+
+      if (error) throw error
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error)
+      throw error
+    }
+  }
+
+  static async createNotification(notification: Omit<AdminNotification, 'id' | 'created_at'>): Promise<AdminNotification> {
+    try {
+      const { data, error } = await supabase
+        .from('admin_notifications')
+        .insert([notification])
+        .select()
+        .single()
+
+      if (error) throw error
+      return data
+    } catch (error) {
+      console.error('Error creating notification:', error)
+      throw error
+    }
+  }
+
+  static async deleteNotification(id: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('admin_notifications')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+    } catch (error) {
+      console.error('Error deleting notification:', error)
+      throw error
+    }
+  }
+
+  // Auto-generate notifications based on system events
+  static async generateOrderNotification(order: any): Promise<void> {
+    try {
+      await this.createNotification({
+        type: 'order',
+        title: 'New Order Received',
+        message: `Order #${order.id.slice(0, 8)} received from ${order.name} for ${new Intl.NumberFormat('en-BD', { style: 'currency', currency: 'BDT' }).format(order.total_amount)}`,
+        is_read: false,
+        data: { order_id: order.id }
+      })
+    } catch (error) {
+      console.error('Error generating order notification:', error)
+    }
+  }
+
+  static async generateStockNotification(product: any): Promise<void> {
+    try {
+      if (product.stock <= 5) {
+        await this.createNotification({
+          type: 'stock',
+          title: 'Low Stock Alert',
+          message: `${product.name} is running low on stock (${product.stock} units remaining)`,
+          is_read: false,
+          data: { product_id: product.id, current_stock: product.stock }
+        })
+      }
+    } catch (error) {
+      console.error('Error generating stock notification:', error)
+    }
+  }
+
+  static async generateRevenueNotification(amount: number): Promise<void> {
+    try {
+      if (amount >= 10000) {
+        await this.createNotification({
+          type: 'revenue',
+          title: 'High Revenue Alert',
+          message: `High revenue milestone reached: ${new Intl.NumberFormat('en-BD', { style: 'currency', currency: 'BDT' }).format(amount)}`,
+          is_read: false,
+          data: { amount }
+        })
+      }
+    } catch (error) {
+      console.error('Error generating revenue notification:', error)
     }
   }
 } 

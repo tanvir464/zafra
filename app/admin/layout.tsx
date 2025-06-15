@@ -14,8 +14,12 @@ import {
   LogOut,
   Bell,
   Search,
-  ChevronDown
+  ChevronDown,
+  Check,
+  Trash2,
+  Clock
 } from 'lucide-react'
+import { NotificationProvider, useNotifications } from '@/contexts/NotificationContext'
 
 const adminNavItems = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
@@ -23,10 +27,11 @@ const adminNavItems = [
   { name: 'Banners', href: '/admin/banners', icon: Image },
   { name: 'Orders', href: '/admin/orders', icon: ShoppingCart },
   { name: 'Users', href: '/admin/users', icon: Users },
+  { name: 'Notifications', href: '/admin/notifications', icon: Bell },
   { name: 'Settings', href: '/admin/settings', icon: Settings },
 ]
 
-export default function AdminLayout({
+function AdminLayoutContent({
   children,
 }: {
   children: React.ReactNode
@@ -34,6 +39,7 @@ export default function AdminLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const pathname = usePathname()
+  const { notifications, notificationStats, markAsRead, markAllAsRead, deleteNotification } = useNotifications()
 
   // Close sidebar when route changes on mobile
   useEffect(() => {
@@ -56,6 +62,34 @@ export default function AdminLayout({
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [sidebarOpen])
+
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'order':
+        return <ShoppingCart className="w-4 h-4 text-blue-500" />
+      case 'product':
+        return <Package className="w-4 h-4 text-green-500" />
+      case 'user':
+        return <Users className="w-4 h-4 text-purple-500" />
+      case 'stock':
+        return <Package className="w-4 h-4 text-red-500" />
+      case 'revenue':
+        return <Bell className="w-4 h-4 text-yellow-500" />
+      default:
+        return <Bell className="w-4 h-4 text-gray-500" />
+    }
+  }
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60))
+    
+    if (diffInMinutes < 1) return 'Just now'
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`
+    return `${Math.floor(diffInMinutes / 1440)}d ago`
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 lg:flex">
@@ -88,7 +122,7 @@ export default function AdminLayout({
         </div>
 
         {/* Navigation */}
-        <nav className="mt-6 px-3 flex-1">
+        <nav className="flex-1 px-4 py-6">
           <div className="space-y-1">
             {adminNavItems.map((item) => {
               const Icon = item.icon
@@ -134,7 +168,7 @@ export default function AdminLayout({
       </div>
 
       {/* Main content */}
-      <div className="lg:ml-64">
+      <div className="flex-1 flex flex-col lg:ml-0">
         {/* Top bar */}
         <header className="bg-white shadow-sm border-b border-gray-200 w-[100%] ">
           <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:w-full">
@@ -143,7 +177,6 @@ export default function AdminLayout({
               onClick={() => setSidebarOpen(true)}
               className="lg:hidden mobile-menu-button text-gray-400 hover:text-gray-600 p-2 rounded-md hover:bg-gray-100"
             >
-              
               <Menu className="w-5 h-5" />
             </button>
             
@@ -160,7 +193,7 @@ export default function AdminLayout({
             </div>
             
             {/* Right side items */}
-            <div className="flex items-center space-x-2 sm:space-x-4">
+            <div className="flex items-center space-x-4">
               {/* Notifications */}
               <div className="relative">
                 <button
@@ -168,25 +201,97 @@ export default function AdminLayout({
                   className="p-2 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100 relative"
                 >
                   <Bell className="w-5 h-5" />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                  {notificationStats && notificationStats.unread > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                      {notificationStats.unread > 9 ? '9+' : notificationStats.unread}
+                    </span>
+                  )}
                 </button>
                 
                 {/* Notifications dropdown */}
                 {notificationsOpen && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-                    <div className="px-4 py-2 border-b border-gray-200">
+                  <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 max-h-96 overflow-y-auto">
+                    <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
                       <h3 className="text-sm font-medium text-gray-900">Notifications</h3>
+                      {notificationStats && notificationStats.unread > 0 && (
+                        <button
+                          onClick={() => {
+                            markAllAsRead()
+                            setNotificationsOpen(false)
+                          }}
+                          className="text-xs text-purple-600 hover:text-purple-700"
+                        >
+                          Mark all as read
+                        </button>
+                      )}
                     </div>
-                    <div className="max-h-64 overflow-y-auto">
-                      <div className="px-4 py-3 hover:bg-gray-50">
-                        <p className="text-sm text-green-600">New order received</p>
-                        <p className="text-xs text-gray-500">2 minutes ago</p>
+                    
+                    {notifications.length === 0 ? (
+                      <div className="px-4 py-8 text-center">
+                        <Bell className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                        <p className="text-sm text-gray-500">No notifications</p>
                       </div>
-                      <div className="px-4 py-3 hover:bg-gray-50">
-                        <p className="text-sm text-red-500">Product stock low</p>
-                        <p className="text-xs text-gray-500">1 hour ago</p>
+                    ) : (
+                      <div className="max-h-64 overflow-y-auto">
+                        {notifications.slice(0, 10).map((notification: any) => (
+                          <div 
+                            key={notification.id} 
+                            className={`px-4 py-3 hover:bg-gray-50 border-l-4 ${
+                              notification.is_read ? 'border-transparent' : 'border-purple-500'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex items-start space-x-3 flex-1">
+                                {getNotificationIcon(notification.type)}
+                                <div className="flex-1 min-w-0">
+                                  <p className={`text-sm font-medium ${
+                                    notification.is_read ? 'text-gray-600' : 'text-gray-900'
+                                  }`}>
+                                    {notification.title}
+                                  </p>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    {notification.message}
+                                  </p>
+                                  <p className="text-xs text-gray-400 mt-1 flex items-center">
+                                    <Clock className="w-3 h-3 mr-1" />
+                                    {formatTimeAgo(notification.created_at)}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center space-x-1 ml-2">
+                                {!notification.is_read && (
+                                  <button
+                                    onClick={() => markAsRead(notification.id)}
+                                    className="p-1 text-gray-400 hover:text-green-600"
+                                    title="Mark as read"
+                                  >
+                                    <Check className="w-3 h-3" />
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => deleteNotification(notification.id)}
+                                  className="p-1 text-gray-400 hover:text-red-600"
+                                  title="Delete"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    </div>
+                    )}
+                    
+                    {notifications.length > 10 && (
+                      <div className="px-4 py-2 border-t border-gray-200">
+                        <a 
+                          href="/admin/notifications" 
+                          className="text-xs text-purple-600 hover:text-purple-700 text-center block"
+                        >
+                          View all notifications
+                        </a>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -216,5 +321,19 @@ export default function AdminLayout({
         </main>
       </div>
     </div>
+  )
+}
+
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <NotificationProvider>
+      <AdminLayoutContent>
+        {children}
+      </AdminLayoutContent>
+    </NotificationProvider>
   )
 } 
