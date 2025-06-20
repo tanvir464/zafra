@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Heart, ShoppingCart } from 'lucide-react'
+import { Heart, ShoppingCart, Zap } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useRouter } from 'next/navigation'
 import { Perfume } from '@/types'
@@ -22,6 +22,7 @@ export default function PerfumeCard({
   const { t } = useLanguage()
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [isBuyNowLoading, setIsBuyNowLoading] = useState(false)
 
   const handleAddToWishlist = async (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -41,6 +42,25 @@ export default function PerfumeCard({
     }
   }
 
+  const handleBuyNow = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (perfume.stock === 0) return
+    
+    setIsBuyNowLoading(true)
+    try {
+      // First add to cart
+      if (onAddToCart) {
+        await onAddToCart(perfume.id)
+      }
+      // Then navigate to cart page
+      router.push('/cart')
+    } catch (error) {
+      console.error('Error adding to cart:', error)
+    } finally {
+      setIsBuyNowLoading(false)
+    }
+  }
+
   const handleCardClick = () => {
     router.push(`/perfumes/${perfume.id}`)
   }
@@ -51,7 +71,7 @@ export default function PerfumeCard({
 
   return (
     <div 
-      className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden group cursor-pointer"
+      className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden group cursor-pointer border border-gray-100 h-full"
       onClick={handleCardClick}
     >
       {/* Image Container */}
@@ -66,10 +86,10 @@ export default function PerfumeCard({
         <button
           onClick={handleAddToWishlist}
           disabled={isLoading}
-          className={`absolute top-3 right-3 p-2 rounded-full transition-colors ${
+          className={`absolute top-3 right-3 p-2 rounded-full transition-all duration-200 shadow-sm ${
             isInWishlist 
-              ? 'bg-red-500 text-white' 
-              : 'bg-white text-gray-600 hover:bg-red-50 hover:text-red-500'
+              ? 'bg-red-500 text-white hover:bg-red-600' 
+              : 'bg-white text-gray-600 hover:bg-red-50 hover:text-red-500 hover:scale-110'
           }`}
         >
           <Heart 
@@ -79,23 +99,26 @@ export default function PerfumeCard({
 
         {/* Discount Badge */}
         {discountPercentage > 0 && (
-          <div className="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded-full text-sm font-semibold">
+          <div className="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded-full text-sm font-semibold shadow-sm">
             -{discountPercentage}%
           </div>
         )}
 
         {/* Out of Stock Overlay */}
         {perfume.stock === 0 && (
-          <div className="absolute inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center">
-            <span className="text-white font-semibold text-lg">Out of Stock</span>
+          <div className="absolute inset-0 bg-gray-900 bg-opacity-60 flex items-center justify-center">
+            <span className="text-white font-semibold text-lg bg-black bg-opacity-50 px-4 py-2 rounded-lg">
+              Out of Stock
+            </span>
           </div>
         )}
       </div>
 
       {/* Content */}
-      <div className="p-4">
+      <div className="flex flex-col justify-between p-4 h-[200px]">
         {/* Perfume Name */}
-        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
+       <div>
+       <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-gray-700 transition-colors">
           {perfume.name}
         </h3>
 
@@ -103,7 +126,7 @@ export default function PerfumeCard({
         <p className="text-sm text-gray-600 mb-2">{perfume.brand}</p>
 
         {/* Price */}
-        <div className="flex items-center gap-2 mb-3">
+        <div className="flex items-center gap-2 mb-4">
           {perfume.discount_price ? (
             <>
               <span className="text-lg font-bold text-red-600">
@@ -119,28 +142,54 @@ export default function PerfumeCard({
             </span>
           )}
         </div>
+       </div>
 
-        {/* Add to Cart Button */}
-        <button
-          onClick={handleAddToCart}
-          disabled={perfume.stock === 0 || isLoading}
-          className={`w-full py-2 px-4 rounded-lg font-semibold transition-colors ${
-            perfume.stock === 0
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              : 'bg-black text-white hover:bg-gray-800'
-          }`}
-        >
-          {isLoading ? (
-            <div className="flex items-center justify-center">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center gap-2">
-              <ShoppingCart className="w-4 h-4" />
-              {t('add_to_cart')}
-            </div>
-          )}
-        </button>
+        {/* Action Buttons */}
+        <div className="flex flex-row justify-between items-center gap-4">
+          {/* Add to Cart Button */}
+          <button
+            onClick={handleAddToCart}
+            disabled={perfume.stock === 0 || isLoading}
+            className={`flex-1 py-2.5 px-3 rounded-lg font-semibold transition-all duration-200 text-sm ${
+              perfume.stock === 0
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-gray-100 text-gray-800 hover:bg-gray-200 border border-gray-200'
+            }`}
+          >
+            {isLoading ? (
+              <div className="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-1">
+                <ShoppingCart className="w-3 h-3" />
+                <span className="truncate">Cart</span>
+              </div>
+            )}
+          </button>
+
+          {/* Buy Now Button */}
+          <button
+            onClick={handleBuyNow}
+            disabled={perfume.stock === 0 || isBuyNowLoading}
+            className={`flex-1 py-2.5 px-3 rounded-lg font-semibold transition-all duration-200 text-sm ${
+              perfume.stock === 0
+                ? 'bg-[#B2A5FF] text-gray-500 cursor-not-allowed'
+                : 'bg-[#493D9E] text-white hover:bg-[#493D9E] hover:scale-[1.02] shadow-sm'
+            }`}
+          >
+            {isBuyNowLoading ? (
+              <div className="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-1">
+                <Zap className="w-3 h-3" />
+                <span className="truncate">Buy</span>
+              </div>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   )

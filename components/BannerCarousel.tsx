@@ -6,39 +6,47 @@ import { Navigation, Pagination, Autoplay } from 'swiper/modules'
 import 'swiper/css'
 import 'swiper/css/navigation'
 import 'swiper/css/pagination'
+import { Perfume } from '@/types'
+import { PerfumeService } from '@/lib/perfumeService'
+
 
 interface Banner {
   id: string
   title: string
   image_url: string
   link?: string
-}
+  perfumes?: Perfume[]
+  }
 
 const mockBanners: Banner[] = [
   {
     id: '1',
     title: 'Luxury Perfumes Collection',
-    image_url: 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=1200&h=400&fit=crop',
-    link: '/collection/luxury'
+    image_url: '/images/lux.png',
+    link: '/perfumes/popular',
+    perfumes: []
   },
   {
     id: '2',
     title: 'New Arrivals - 50% Off',
-    image_url: 'https://images.unsplash.com/photo-1594736797933-d0fa47032d9d?w=1200&h=400&fit=crop',
-    link: '/new-arrivals'
+    image_url: '/images/new.png',
+    link: '/perfumes/new-arrivals',
+    perfumes: []
   },
   {
     id: '3',
     title: 'Exclusive Designer Fragrances',
-    image_url: 'https://images.unsplash.com/photo-1588405748880-12d1d2a59d75?w=1200&h=400&fit=crop',
-    link: '/exclusive'
+    image_url: '/images/exc.png',
+    link: '/perfumes/exclusive',
+    perfumes: []
   }
 ]
 
 export default function BannerCarousel() {
+
   const [banners, setBanners] = useState<Banner[]>(mockBanners)
 
-  return (
+      return (
     <div className="w-full h-64 md:h-80 lg:h-96 mb-8">
       <Swiper
         modules={[Navigation, Pagination, Autoplay]}
@@ -57,23 +65,18 @@ export default function BannerCarousel() {
               <img
                 src={banner.image_url}
                 alt={banner.title}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover" 
               />
-              <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
-                <div className="text-center text-white">
-                  <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold mb-4">
-                    {banner.title}
-                  </h2>
-                  {banner.link && (
-                    <a
-                      href={banner.link}
-                      className="inline-block bg-white text-black px-6 py-3 rounded-full font-semibold hover:bg-gray-100 transition-colors"
-                    >
-                      Shop Now
-                    </a>
-                  )}
+                <div className="flex flex-col items-center justify-end absolute bottom-0 left-0 w-full h-full  mb-10">                 
+                    {banner.link && (
+                      <a
+                        href={banner.link}
+                        className="inline-block text-black bg-white px-6 py-2 rounded-full font-semibold hover:bg-gray-100 transition-colors shadow-lg"
+                      >
+                        Shop Now
+                      </a>
+                    )}
                 </div>
-              </div>
             </div>
           </SwiperSlide>
         ))}

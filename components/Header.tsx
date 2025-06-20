@@ -86,8 +86,8 @@ export default function Header() {
       <div className="bg-white shadow-md py-4 px-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           {/* Logo */}
-          <div className="flex-shrink-0">
-            <h1 className="text-2xl font-bold text-gray-900 cursor-pointer" onClick={() => router.push('/')}>ZAFRA</h1>
+          <div className="flex-shrink-0 mr-20">
+            <h1 className="text-2xl font-bold text-gray-900 cursor-pointer font-serif" onClick={() => router.push('/')}>SCENTARE</h1>
           </div>
 
           {/* Navigation Links */}

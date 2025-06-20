@@ -114,7 +114,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 py-6">
           <BannerCarousel />
         </div>
-
+         
         {/* Perfume Sections */}
         <div className="max-w-7xl mx-auto px-4 py-8">
           {/* Featured Products */}
