@@ -11,7 +11,7 @@ import ReviewList from '@/components/ReviewList'
 import { Perfume, Review } from '@/types'
 import { PerfumeService } from '@/lib/perfumeService'
 import { ReviewService } from '@/lib/reviewService'
-import { ChevronLeft, ChevronRight, X, ZoomIn, Heart, ShoppingCart, Star, Package, Truck, Shield, Clock } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X, ZoomIn, Heart, ShoppingCart, Star, Package, Truck, Shield, Clock, Zap } from 'lucide-react'
 
 export default function ProductPage() {
   const params = useParams()
@@ -232,18 +232,31 @@ export default function ProductPage() {
               )}
               
               {/* Sale badge */}
+              <div className='flex flex-row absolute top-2 left-0 justify-between w-full m'>
+             <div className='flex flex-row gap-2'>
               {perfume.discount_price && (
-                <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-                  -{calculateDiscountPercentage(perfume.price, perfume.discount_price)}% OFF
-                </div>
-              )}
-              
-              {/* Featured badge */}
-              {perfume.featured && (
-                <div className="absolute top-4 left-4 bg-purple-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-                  Featured
-                </div>
-              )}
+                  <div className=" bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                    -{calculateDiscountPercentage(perfume.price, perfume.discount_price)}% OFF
+                  </div>
+                )}
+                
+                {/* Featured badge */}
+                {perfume.featured && (
+                  <div className=" bg-[#493D9E] text-white px-3 py-1 rounded-full text-sm font-medium">
+                    Featured
+                  </div>
+                )}
+             </div>
+              <button className={`${isInWishlist(perfume.id) ? 'bg-theme-900 text-white' : 'bg-gray-200 text-gray-500'} rounded-full mr-16 w-7 h-7 flex items-center justify-center transition-all duration-300 scale-100 hover:scale-105 `}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAddToWishlist();
+              }}
+              >
+                <Heart className="w-4 h-4" />
+              </button>
+
+              </div>
             </div>
 
             {/* Thumbnail */}
@@ -287,7 +300,7 @@ export default function ProductPage() {
             <div className="space-y-2">
               {perfume.discount_price ? (
                 <div>
-                  <span className="text-3xl font-bold text-purple-600">
+                  <span className="text-3xl font-bold text-theme-900">  
                     {formatPrice(perfume.discount_price)}
                   </span>
                   <span className="text-xl text-gray-500 line-through ml-3">
@@ -337,26 +350,25 @@ export default function ProductPage() {
             </div>
 
             {/* Action Buttons */}
-            <div className="space-y-3">
+            <div className="flex space-x-3">
+              <button className="w-full bg-theme-900 text-white py-3 px-6 rounded-md hover:bg-theme-900 disabled:bg-gray-400 disabled:cursor-not-allowed  font-medium
+              transition-all duration-300 scale-100 hover:scale-105
+              ">
+                <Zap className="w-5 h-5 inline mr-2" />
+                Buy Now 
+              </button>
+             
+            </div>
+            <div className="flex space-x-3">
               <button
                 onClick={handleAddToCart}
                 disabled={perfume.stock === 0}
-                className="w-full bg-purple-600 text-white py-3 px-6 rounded-md hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
+                className="py-3 w-full flex items-center justify-center px-6 rounded-md font-medium border-2 border-gray-700/60 text-gray-700
+                hover:border-gray-700/100 transition-all duration-300 scale-100 hover:scale-105
+                "
               >
                 <ShoppingCart className="w-5 h-5 inline mr-2" />
                 {perfume.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
-              </button>
-              
-              <button
-                onClick={handleAddToWishlist}
-                className={`w-full py-3 px-6 rounded-md border-2 transition-colors font-medium ${
-                  isInWishlist(perfume.id)
-                    ? 'border-red-500 text-red-600 hover:bg-red-50'
-                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <Heart className={`w-5 h-5 inline mr-2 ${isInWishlist(perfume.id) ? 'fill-current' : ''}`} />
-                {isInWishlist(perfume.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}
               </button>
             </div>
 

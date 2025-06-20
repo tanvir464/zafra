@@ -111,7 +111,7 @@ function AdminLayoutContent({
             <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">Z</span>
             </div>
-            <h1 className="ml-3 text-xl font-bold text-gray-900">Zafra Admin</h1>
+            <h1 className="ml-3 text-xl font-bold text-gray-900">Scentare Admin</h1>
           </div>
           <button
             onClick={() => setSidebarOpen(false)}
@@ -157,7 +157,7 @@ function AdminLayoutContent({
             </div>
             <div className="ml-3">
               <p className="text-sm font-medium text-gray-900">Admin User</p>
-              <p className="text-xs text-gray-500">admin@zafra.com</p>
+              <p className="text-xs text-gray-500">admin@Scentare.com</p>
             </div>
           </div>
           <button className="flex items-center w-full px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg transition-colors">

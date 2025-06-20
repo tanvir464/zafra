@@ -562,9 +562,9 @@ export class AdminService {
 
   private static getDefaultSettings(): AdminSettings {
     return {
-      site_name: 'Zafra Perfumes',
+      site_name: 'Scentare Perfumes',
       site_description: 'Premium fragrances for every occasion',
-      contact_email: 'contact@zafra.com',
+      contact_email: 'contact@Scentare.com',
       contact_phone: '+880 1234567890',
       address: 'Dhaka, Bangladesh',
       social_facebook: '',

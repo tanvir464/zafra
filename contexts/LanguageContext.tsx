@@ -38,7 +38,7 @@ const translations = {
     'info.about': 'About Us',
     'info.contact': 'Contact Us',
     'payment.with': 'Pay with',
-    'copyright': 'Zafra © All Rights Reserved'
+    'copyright': 'Scentare © All Rights Reserved'
   },
   bn: {
     'nav.home': 'হোম',

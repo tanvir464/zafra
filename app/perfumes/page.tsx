@@ -8,6 +8,7 @@ import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { Perfume } from '@/types'
 import { PerfumeService } from '@/lib/perfumeService'
+import { ShoppingCart, Zap } from 'lucide-react'
 
 export default function AllPerfumesPage() {
   const { t } = useLanguage()
@@ -20,7 +21,8 @@ export default function AllPerfumesPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [sortBy, setSortBy] = useState('newest')
-
+  const [isLoading, setIsLoading] = useState(false)
+  const [isBuyNowLoading, setIsBuyNowLoading] = useState(false)
   useEffect(() => {
     const fetchPerfumes = async () => {
       try {
@@ -196,7 +198,7 @@ export default function AllPerfumesPage() {
               {/* Results Count */}
               <div className="flex items-center justify-end">
                 <p className="text-sm text-gray-600 font-bold ">
-                  <sup className='text-purple-600 font-bold'>*</sup>{filteredPerfumes.length} perfume{filteredPerfumes.length !== 1 ? 's' : ''} found
+                  <sup className='text-theme-900 font-bold'>*</sup>{filteredPerfumes.length} perfume{filteredPerfumes.length !== 1 ? 's' : ''} found
                 </p>
               </div>
             </div>
@@ -264,12 +266,52 @@ export default function AllPerfumesPage() {
                     </span>
                   </div>
                   
-                  <button
-                    onClick={(e) => handleAddToCart(perfume.id, e)}
-                    className="w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 transition-colors"
-                  >
-                    Add to Cart
-                  </button>
+                  {/* Action Buttons */}
+        <div className="flex flex-row justify-between items-center gap-4">
+          {/* Add to Cart Button */}
+          <button
+            onClick={(e) => handleAddToCart(perfume.id, e)}
+            disabled={perfume.stock === 0 || isLoading}
+            className={`flex-1 py-2.5 px-3 rounded-lg font-semibold transition-all duration-200 text-sm ${
+              perfume.stock === 0
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-gray-100 text-gray-800 hover:bg-gray-200 border border-gray-200'
+            }`}
+          >
+            {isLoading ? (
+              <div className="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-1">
+                <ShoppingCart className="w-3 h-3" />
+                <span className="truncate">Cart</span>
+              </div>
+            )}
+          </button>
+
+              {/* Buy Now Button */}
+                <button
+                  onClick={(e) => handleAddToCart(perfume.id, e)}
+                  disabled={perfume.stock === 0 || isBuyNowLoading}
+                  className={`flex-1 py-2.5 px-3 rounded-lg font-semibold transition-all duration-200 text-sm ${
+                    perfume.stock === 0
+                      ? 'bg-[#B2A5FF] text-gray-500 cursor-not-allowed'
+                      : 'bg-[#493D9E] text-white hover:bg-[#493D9E] hover:scale-[1.02] shadow-sm'
+                  }`}
+                >
+                  {isBuyNowLoading ? (
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-1">
+                      <Zap className="w-3 h-3" />
+                      <span className="truncate">Buy</span>
+                    </div>
+                  )}
+                </button>
+              </div>
                 </div>
               </div>
             ))}

@@ -8,6 +8,7 @@ import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { Perfume } from '@/types'
 import { PerfumeService } from '@/lib/perfumeService'
+import { ShoppingCart, Zap } from 'lucide-react'
 
 export default function PopularPage() {
   const { t } = useLanguage()
@@ -18,18 +19,19 @@ export default function PopularPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'featured' | 'discounted'>('featured')
-
+  const [isLoading, setIsLoading] = useState(false)
+  const [isBuyNowLoading, setIsBuyNowLoading] = useState(false)
   useEffect(() => {
     const fetchPopularPerfumes = async () => {
       try {
         setLoading(true)
         setError(null)
-        
+
         const [featured, discounted] = await Promise.all([
           PerfumeService.getFeaturedPerfumes(),
           PerfumeService.getDiscountedPerfumes()
         ])
-        
+
         setFeaturedPerfumes(featured)
         setDiscountedPerfumes(discounted)
       } catch (err) {
@@ -60,7 +62,7 @@ export default function PopularPage() {
   const handlePerfumeClick = (perfumeId: string) => {
     console.log('Popular perfume clicked:', perfumeId)
     console.log('Navigating to:', `/perfumes/${perfumeId}`)
-    
+
     // Try router.push first, fallback to window.location
     try {
       router.push(`/perfumes/${perfumeId}`)
@@ -105,8 +107,8 @@ export default function PopularPage() {
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <p className="text-red-600 mb-4">{error}</p>
-            <button 
-              onClick={() => window.location.reload()} 
+            <button
+              onClick={() => window.location.reload()}
               className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
             >
               Try Again
@@ -123,7 +125,7 @@ export default function PopularPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
-      
+
       <main className="max-w-7xl mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Popular Perfumes</h1>
@@ -136,21 +138,19 @@ export default function PopularPage() {
             <nav className="flex space-x-8 px-6">
               <button
                 onClick={() => setActiveTab('featured')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'featured'
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'featured'
                     ? 'border-purple-500 text-purple-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                  }`}
               >
                 ⭐ Featured Perfumes ({featuredPerfumes.length})
               </button>
               <button
                 onClick={() => setActiveTab('discounted')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'discounted'
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'discounted'
                     ? 'border-purple-500 text-purple-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                  }`}
               >
                 🎉 On Sale ({discountedPerfumes.length})
               </button>
@@ -162,8 +162,8 @@ export default function PopularPage() {
             {currentPerfumes.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {currentPerfumes.map((perfume) => (
-                  <div 
-                    key={perfume.id} 
+                  <div
+                    key={perfume.id}
                     className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105"
                     onClick={() => handlePerfumeClick(perfume.id)}
                   >
@@ -175,40 +175,39 @@ export default function PopularPage() {
                       />
                       <button
                         onClick={(e) => handleAddToWishlist(perfume.id, e)}
-                        className={`absolute top-2 right-2 p-2 rounded-full ${
-                          isInWishlist(perfume.id)
+                        className={`absolute top-2 right-2 p-2 rounded-full ${isInWishlist(perfume.id)
                             ? 'bg-red-500 text-white'
                             : 'bg-white text-gray-600 hover:bg-gray-100'
-                        }`}
+                          }`}
                       >
                         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
                         </svg>
                       </button>
-                      
+
                       {activeTab === 'featured' && (
-                        <div className="absolute top-2 left-2 bg-purple-500 text-white px-2 py-1 rounded text-sm font-medium">
+                        <div className="absolute top-2 left-2 bg-theme-900 text-white px-2 py-1 rounded text-sm font-medium">
                           Featured
                         </div>
                       )}
-                      
+
                       {activeTab === 'discounted' && perfume.discount_price && (
                         <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-sm font-medium">
                           -{calculateDiscountPercentage(perfume.price, perfume.discount_price)}%
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="p-4">
                       <h3 className="font-semibold text-gray-900 mb-1">{perfume.name}</h3>
                       <p className="text-sm text-gray-600 mb-2">{perfume.brand}</p>
                       <p className="text-sm text-gray-500 mb-3 line-clamp-2">{perfume.description}</p>
-                      
+
                       <div className="flex items-center justify-between mb-3">
                         <div>
                           {perfume.discount_price ? (
                             <div>
-                              <span className="text-lg font-bold text-purple-600">
+                              <span className="text-lg font-bold text-theme-900">
                                 {formatPrice(perfume.discount_price)}
                               </span>
                               <span className="text-sm text-gray-500 line-through ml-2">
@@ -225,13 +224,51 @@ export default function PopularPage() {
                           {perfume.category}
                         </span>
                       </div>
-                      
-                      <button
-                        onClick={(e) => handleAddToCart(perfume.id, e)}
-                        className="w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 transition-colors"
-                      >
-                        Add to Cart
-                      </button>
+
+                      {/* Action Buttons */}
+                      <div className="flex flex-row justify-between items-center gap-4">
+                        {/* Add to Cart Button */}
+                        <button
+                          onClick={(e) => handleAddToCart(perfume.id, e)}
+                          disabled={perfume.stock === 0 || isLoading}
+                          className={`flex-1 py-2.5 px-3 rounded-lg font-semibold transition-all duration-200 text-sm ${perfume.stock === 0
+                              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                              : 'bg-gray-100 text-gray-800 hover:bg-gray-200 border border-gray-200'
+                            }`}
+                        >
+                          {isLoading ? (
+                            <div className="flex items-center justify-center">
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-center gap-1">
+                              <ShoppingCart className="w-3 h-3" />
+                              <span className="truncate">Cart</span>
+                            </div>
+                          )}
+                        </button>
+
+                        {/* Buy Now Button */}
+                        <button
+                          onClick={(e) => handleAddToCart(perfume.id, e)}
+                          disabled={perfume.stock === 0 || isBuyNowLoading}
+                          className={`flex-1 py-2.5 px-3 rounded-lg font-semibold transition-all duration-200 text-sm ${perfume.stock === 0
+                              ? 'bg-[#B2A5FF] text-gray-500 cursor-not-allowed'
+                              : 'bg-[#493D9E] text-white hover:bg-[#493D9E] hover:scale-[1.02] shadow-sm'
+                            }`}
+                        >
+                          {isBuyNowLoading ? (
+                            <div className="flex items-center justify-center">
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-center gap-1">
+                              <Zap className="w-3 h-3" />
+                              <span className="truncate">Buy</span>
+                            </div>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -239,8 +276,8 @@ export default function PopularPage() {
             ) : (
               <div className="text-center py-12">
                 <p className="text-gray-500 text-lg">
-                  {activeTab === 'featured' 
-                    ? 'No featured perfumes available at the moment.' 
+                  {activeTab === 'featured'
+                    ? 'No featured perfumes available at the moment.'
                     : 'No discounted perfumes available at the moment.'
                   }
                 </p>

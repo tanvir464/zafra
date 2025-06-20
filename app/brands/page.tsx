@@ -8,11 +8,17 @@ import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { Perfume } from '@/types'
 import { PerfumeService } from '@/lib/perfumeService'
+import BrandIconService, { BrandIconResult } from '@/lib/brandIconService'
 
 interface BrandWithPerfumes {
   name: string
   perfumes: Perfume[]
   count: number
+  icon?: {
+    url: string
+    alt: string
+    source: string
+  }
 }
 
 export default function BrandsPage() {
@@ -25,6 +31,8 @@ export default function BrandsPage() {
   const [selectedBrand, setSelectedBrand] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState<'name' | 'count'>('name')
+  const [iconLoading, setIconLoading] = useState<Set<string>>(new Set())
+  const [icons, setIcons] = useState<BrandIconResult[]>([])
 
   useEffect(() => {
     const fetchBrands = async () => {
@@ -46,6 +54,9 @@ export default function BrandsPage() {
         }
         
         setBrands(brandsWithPerfumes)
+        
+        // Fetch icons for all brands
+        await fetchBrandIcons(brandsWithPerfumes)
       } catch (err) {
         console.error('Error fetching brands:', err)
         setError('Failed to load brands. Please try again later.')
@@ -56,6 +67,22 @@ export default function BrandsPage() {
 
     fetchBrands()
   }, [])
+
+  const fetchBrandIcons =async(brandsList: BrandWithPerfumes[])=>{
+    const iconPromises = brandsList.map(async (brand) => {
+      const icon = await BrandIconService.getBrandIcon(brand.name)
+      return icon
+    })
+    const icons = await Promise.all(iconPromises)
+    setIcons(icons)
+  }
+ 
+
+  const getIconUrl = (brandName: string) => {
+    const brandNameWithoutSpaces = brandName.split(' ')[0]
+    const icon = icons.find(icon => icon.alt.split(' ')[0] === brandNameWithoutSpaces)
+    return icon?.url
+  }
 
   const handleAddToWishlist = async (perfumeId: string, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -112,6 +139,47 @@ export default function BrandsPage() {
     return colors[index]
   }
 
+  const renderBrandIcon = (brand: BrandWithPerfumes) => {
+    const isLoading = iconLoading.has(brand.name)
+    
+    if (isLoading) {
+      return (
+        <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center bg-gray-100">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-theme-900"></div>
+        </div>
+      )
+    }
+
+    if (brand.icon?.url) {
+      return (
+        <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center bg-white border-2 border-gray-200 overflow-hidden">
+          <img
+            src={brand.icon.url}
+            alt={brand.icon.alt}
+            className="w-12 h-12 object-contain"
+            onError={(e) => {
+              // Fallback to initial if image fails to load
+              const target = e.target as HTMLImageElement
+              target.style.display = 'none'
+              target.parentElement!.innerHTML = `
+                <div class="w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold ${getBrandColor(brand.name)}">
+                  ${getBrandInitial(brand.name)}
+                </div>
+              `
+            }}
+          />
+        </div>
+      )
+    }
+
+    // Fallback to initial
+    return (
+      <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center text-2xl font-bold ${getBrandColor(brand.name)}`}>
+        {getBrandInitial(brand.name)}
+      </div>
+    )
+  }
+
   // Filter and sort brands
   const filteredAndSortedBrands = brands
     .filter(brand => 
@@ -130,7 +198,7 @@ export default function BrandsPage() {
         <Header />
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-theme-900 mx-auto mb-4"></div>
             <p className="text-gray-600">Loading brands...</p>
           </div>
         </div>
@@ -148,7 +216,7 @@ export default function BrandsPage() {
             <p className="text-red-600 mb-4">{error}</p>
             <button 
               onClick={() => window.location.reload()} 
-              className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+              className="px-4 py-2 bg-theme-900 text-white rounded hover:bg-theme-800"
             >
               Try Again
             </button>
@@ -180,7 +248,7 @@ export default function BrandsPage() {
                 placeholder="Search by brand name..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 text-black"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-theme-500 text-black"
               />
             </div>
 
@@ -190,7 +258,7 @@ export default function BrandsPage() {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as 'name' | 'count')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 text-black"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-theme-500 text-black"
               >
                 <option value="name">Name A-Z</option>
                 <option value="count">Most Products</option>
@@ -200,7 +268,7 @@ export default function BrandsPage() {
             {/* Results Count */}
             <div className="flex items-center justify-end">
               <p className="text-sm text-gray-600 font-bold">
-                <sup className='text-purple-600 font-bold'>*</sup>{filteredAndSortedBrands.length} brand{filteredAndSortedBrands.length !== 1 ? 's' : ''} found
+                <sup className='text-theme-900 font-bold'>*</sup>{filteredAndSortedBrands.length} brand{filteredAndSortedBrands.length !== 1 ? 's' : ''} found
               </p>
             </div>
           </div>
@@ -212,13 +280,11 @@ export default function BrandsPage() {
             {filteredAndSortedBrands.map((brand) => (
               <div key={brand.name} className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                 <div className="p-6 text-center">
-                  {/* Brand Avatar */}
-                  <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center text-2xl font-bold ${getBrandColor(brand.name)}`}>
-                    {getBrandInitial(brand.name)}
-                  </div>
+                  {/* Brand Icon */}
+                  <img src={getIconUrl(brand.name)} alt={brand.name} className="w-28 h-28 mx-auto mb-4 rounded-full flex items-center justify-center bg-white border-2 border-theme-900 p-1 overflow-hidden" />
                   
                   {/* Brand Name */}
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">{brand.name}</h3>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2 capitalize text-center">{brand.name}</h3>
                   
                   {/* Product Count */}
                   <p className="text-sm text-gray-600 mb-4">{brand.count} product{brand.count !== 1 ? 's' : ''}</p>
@@ -226,7 +292,7 @@ export default function BrandsPage() {
                   {/* View Collection Button */}
                   <button
                     onClick={() => setSelectedBrand(selectedBrand === brand.name ? null : brand.name)}
-                    className="w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 transition-colors"
+                    className="w-full bg-theme-900 text-white py-2 px-4 rounded-md hover:bg-theme-800 hover:scale-105 duration-300"
                   >
                     {selectedBrand === brand.name ? 'Hide Collection' : 'View Collection'}
                   </button>
@@ -251,7 +317,7 @@ export default function BrandsPage() {
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-gray-900 text-sm truncate">{perfume.name}</p>
                             <p className="text-xs text-gray-600 capitalize">{perfume.category}</p>
-                            <p className="text-xs font-medium text-purple-600">
+                            <p className="text-xs font-medium text-theme-900">
                               {perfume.discount_price ? formatPrice(perfume.discount_price) : formatPrice(perfume.price)}
                             </p>
                           </div>
@@ -295,7 +361,7 @@ export default function BrandsPage() {
               </p>
               <button
                 onClick={() => setSearchQuery('')}
-                className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+                className="px-4 py-2 bg-theme-900 text-white rounded hover:bg-theme-800"
               >
                 View All Brands
               </button>

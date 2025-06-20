@@ -9,6 +9,7 @@ import PerfumeSection from '@/components/PerfumeSection'
 import Footer from '@/components/Footer'
 import { Perfume } from '@/types'
 import { PerfumeService } from '@/lib/perfumeService'
+import { ArrowRight } from 'lucide-react'
 
 export default function HomePage() {
   const { t } = useLanguage()
@@ -165,12 +166,10 @@ export default function HomePage() {
           <div className="text-center py-8">
             <a
               href="/perfumes"
-              className="inline-flex items-center px-6 py-3 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors"
+              className="inline-flex items-center px-6 py-3 bg-theme-900 text-white font-medium rounded-lg hover:scale-105 transition-all duration-300"
             >
               View All Perfumes
-              <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-              </svg>
+              <ArrowRight className="ml-2 w-5 h-5 hover:scale-105 transition-all duration-300 " />
             </a>
           </div>
         </div>

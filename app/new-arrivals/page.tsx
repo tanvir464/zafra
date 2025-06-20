@@ -8,6 +8,7 @@ import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { Perfume } from '@/types'
 import { PerfumeService } from '@/lib/perfumeService'
+import { ShoppingCart, Zap } from 'lucide-react'
 
 export default function NewArrivalsPage() {
   const { t } = useLanguage()
@@ -22,7 +23,8 @@ export default function NewArrivalsPage() {
   const [selectedBrand, setSelectedBrand] = useState('all')
   const [sortBy, setSortBy] = useState('newest')
   const [brands, setBrands] = useState<string[]>([])
-
+  const [isLoading, setIsLoading] = useState(false)
+  const [isBuyNowLoading, setIsBuyNowLoading] = useState(false)
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -100,6 +102,11 @@ export default function NewArrivalsPage() {
   }
 
   const handleAddToCart = async (perfumeId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    await addToCart(perfumeId, 1)
+  }
+
+  const handleBuyNow = async (perfumeId: string, e: React.MouseEvent) => {
     e.stopPropagation()
     await addToCart(perfumeId, 1)
   }
@@ -182,17 +189,17 @@ export default function NewArrivalsPage() {
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow-sm p-6 text-center">
-            <div className="text-3xl font-bold text-purple-600 mb-2">{perfumes.length}</div>
+            <div className="text-3xl font-bold text-theme-900 mb-2">{perfumes.length}</div>
             <div className="text-gray-600">Total Products</div>
           </div>
           <div className="bg-white rounded-lg shadow-sm p-6 text-center">
-            <div className="text-3xl font-bold text-green-600 mb-2">
+            <div className="text-3xl font-bold text-red-600 mb-2">
               {perfumes.filter(p => p.discount_price).length}
             </div>
             <div className="text-gray-600">On Sale</div>
           </div>
           <div className="bg-white rounded-lg shadow-sm p-6 text-center">
-            <div className="text-3xl font-bold text-blue-600 mb-2">
+            <div className="text-3xl font-bold text-theme-900 mb-2">
               {perfumes.filter(p => p.featured).length}
             </div>
             <div className="text-gray-600">Featured</div>
@@ -263,7 +270,7 @@ export default function NewArrivalsPage() {
             {/* Results Count */}
             <div className="flex items-center justify-end">
               <p className="text-sm text-gray-600 font-bold">
-                <sup className='text-purple-600 font-bold'>*</sup>{filteredPerfumes.length} perfume{filteredPerfumes.length !== 1 ? 's' : ''} found
+                <sup className='text-theme-900 font-bold'>*</sup>{filteredPerfumes.length} perfume{filteredPerfumes.length !== 1 ? 's' : ''} found
               </p>
             </div>
           </div>
@@ -297,24 +304,26 @@ export default function NewArrivalsPage() {
                     </svg>
                   </button>
                   
-                  {/* New Arrival Badge */}
-                  <div className="absolute top-2 left-2 bg-green-500 text-white px-2 py-1 rounded text-sm font-medium">
+                 <div className='flex flex-row absolute top-2 left-2 w-full  gap-1 '>
+                   {/* New Arrival Badge */}
+                   <div className=" bg-green-500 text-white px-2 py-1 rounded text-sm font-medium">
                     New
                   </div>
                   
                   {/* Sale Badge */}
                   {perfume.discount_price && (
-                    <div className="absolute top-2 left-12 bg-red-500 text-white px-2 py-1 rounded text-sm font-medium">
+                    <div className=" bg-red-500 text-white px-2 py-1 rounded text-sm font-medium">
                       Sale
                     </div>
                   )}
                   
                   {/* Featured Badge */}
                   {perfume.featured && (
-                    <div className="absolute top-2 left-2 bg-purple-500 text-white px-2 py-1 rounded text-sm font-medium">
+                    <div className=" bg-theme-900 text-white px-2 py-1 rounded text-sm font-medium">
                       Featured
                     </div>
                   )}
+                 </div>
                 </div>
                 
                 <div className="p-4">
@@ -331,7 +340,7 @@ export default function NewArrivalsPage() {
                     <div>
                       {perfume.discount_price ? (
                         <div>
-                          <span className="text-lg font-bold text-purple-600">
+                          <span className="text-lg font-bold text-theme-900">
                             {formatPrice(perfume.discount_price)}
                           </span>
                           <span className="text-sm text-gray-500 line-through ml-2">
@@ -348,13 +357,52 @@ export default function NewArrivalsPage() {
                       {perfume.category}
                     </span>
                   </div>
-                  
-                  <button
-                    onClick={(e) => handleAddToCart(perfume.id, e)}
-                    className="w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 transition-colors"
-                  >
-                    Add to Cart
-                  </button>
+                   {/* Action Buttons */}
+        <div className="flex flex-row justify-between items-center gap-4">
+          {/* Add to Cart Button */}
+          <button
+            onClick={(e) => handleAddToCart(perfume.id, e)}
+            disabled={perfume.stock === 0 || isLoading}
+            className={`flex-1 py-2.5 px-3 rounded-lg font-semibold transition-all duration-200 text-sm ${
+              perfume.stock === 0
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-gray-100 text-gray-800 hover:bg-gray-200 border border-gray-200'
+            }`}
+          >
+            {isLoading ? (
+              <div className="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-1">
+                <ShoppingCart className="w-3 h-3" />
+                <span className="truncate">Cart</span>
+              </div>
+            )}
+          </button>
+
+          {/* Buy Now Button */}
+                <button
+                  onClick={(e) => handleBuyNow(perfume.id, e)}
+                  disabled={perfume.stock === 0 || isBuyNowLoading}
+                  className={`flex-1 py-2.5 px-3 rounded-lg font-semibold transition-all duration-200 text-sm ${
+                    perfume.stock === 0
+                      ? 'bg-[#B2A5FF] text-gray-500 cursor-not-allowed'
+                      : 'bg-[#493D9E] text-white hover:bg-[#493D9E] hover:scale-[1.02] shadow-sm'
+                  }`}
+                >
+                  {isBuyNowLoading ? (
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-1">
+                      <Zap className="w-3 h-3" />
+                      <span className="truncate">Buy</span>
+                    </div>
+                  )}
+                </button>
+              </div>
                 </div>
               </div>
             ))}
@@ -366,18 +414,18 @@ export default function NewArrivalsPage() {
         )}
 
         {/* Newsletter Signup */}
-        <div className="mt-12 bg-gradient-to-r from-purple-600 to-purple-800 rounded-lg p-8 text-center text-white">
+        <div className="mt-12 bg-gradient-to-r from-purple-900 to-theme-900 rounded-lg p-8 text-center text-white">
           <h3 className="text-2xl font-bold mb-4">Stay Updated with New Arrivals</h3>
-          <p className="text-purple-100 mb-6 max-w-2xl mx-auto">
+          <p className="text-gray-200 mb-6 max-w-2xl mx-auto">
             Be the first to know about our latest perfume releases, exclusive offers, and trending fragrances.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
             <input
               type="email"
               placeholder="Enter your email"
-              className="flex-1 px-4 py-3 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-white"
+              className="flex-1 px-4 py-3 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300 border-1 border-gray-300"
             />
-            <button className="bg-white text-purple-600 px-6 py-3 rounded-md font-medium hover:bg-gray-100 transition-colors">
+            <button className="bg-white text-theme-900 px-6 py-3 rounded-md font-medium hover:bg-gray-100 transition-colors">
               Subscribe
             </button>
           </div>

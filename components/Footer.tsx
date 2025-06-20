@@ -47,7 +47,7 @@ export default function Footer() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             {/* Company Info */}
             <div>
-              <h2 className="text-2xl font-bold mb-4">ZAFRA</h2>
+              <h2 className="text-2xl font-bold mb-4">Scentare</h2>
               <p className="text-gray-300 mb-4">
                 Your premium destination for luxury perfumes and fragrances. 
                 Experience the art of scent with our curated collection.

@@ -71,7 +71,7 @@ export default function PerfumeCard({
 
   return (
     <div 
-      className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden group cursor-pointer border border-gray-100 h-full"
+      className="bg-white rounded-lg shadow-md hover:shadow-lg hover:shadow-purple-200 transition-all duration-300 overflow-hidden group cursor-pointer border border-gray-100 h-full"
       onClick={handleCardClick}
     >
       {/* Image Container */}

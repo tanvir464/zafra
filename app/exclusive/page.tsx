@@ -8,6 +8,7 @@ import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { Perfume } from '@/types'
 import { PerfumeService } from '@/lib/perfumeService'
+import { ShoppingCart, Zap } from 'lucide-react'
 
 export default function ExclusivePage() {
   const { t } = useLanguage()
@@ -18,7 +19,8 @@ export default function ExclusivePage() {
   const [error, setError] = useState<string | null>(null)
   const [priceFilter, setPriceFilter] = useState('all')
   const [sortBy, setSortBy] = useState('price-high')
-
+  const [isLoading, setIsLoading] = useState(false)
+  const [isBuyNowLoading, setIsBuyNowLoading] = useState(false)
   useEffect(() => {
     const fetchExclusivePerfumes = async () => {
       try {
@@ -203,7 +205,7 @@ export default function ExclusivePage() {
             {/* Results Count */}
             <div className="flex items-center justify-end">
               <p className="text-sm text-gray-600 font-bold">
-                <sup className='text-purple-600 font-bold'>*</sup>{exclusivePerfumes.length} exclusive perfume{exclusivePerfumes.length !== 1 ? 's' : ''} found
+                <sup className='text-theme-900 font-bold'>*</sup>{exclusivePerfumes.length} exclusive perfume{exclusivePerfumes.length !== 1 ? 's' : ''} found
               </p>
             </div>
           </div>
@@ -237,15 +239,18 @@ export default function ExclusivePage() {
                     </svg>
                   </button>
                   
-                  <div className="absolute top-2 left-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 py-1 rounded-full text-sm font-medium">
+                 <div className='flex flex-row justify-between items-center gap-4 absolute top-2 left-2'>
+                 <div className=" bg-gradient-to-r from-purple-500 to-theme-900 text-white px-3 py-1 rounded-full text-sm font-medium">
                     {getPriceRangeLabel(perfume.price)}
                   </div>
-                  
                   {perfume.discount_price && (
-                    <div className="absolute bottom-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-sm font-medium">
+                    <div className="bg-red-500 text-white px-2 py-1 rounded-full text-sm font-medium">
                       Sale
                     </div>
                   )}
+                </div>
+                  
+                  
                 </div>
                 
                 <div className="p-4">
@@ -257,7 +262,7 @@ export default function ExclusivePage() {
                     <div>
                       {perfume.discount_price ? (
                         <div>
-                          <span className="text-lg font-bold text-purple-600">
+                          <span className="text-lg font-bold text-theme-900">
                             {formatPrice(perfume.discount_price)}
                           </span>
                           <span className="text-sm text-gray-500 line-through ml-2">
@@ -265,7 +270,7 @@ export default function ExclusivePage() {
                           </span>
                         </div>
                       ) : (
-                        <span className="text-lg font-bold text-gray-900">
+                        <span className="text-lg font-bold text-theme-900">
                           {formatPrice(perfume.price)}
                         </span>
                       )}
@@ -275,12 +280,52 @@ export default function ExclusivePage() {
                     </span>
                   </div>
                   
-                  <button
-                    onClick={(e) => handleAddToCart(perfume.id, e)}
-                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-2 px-4 rounded-md hover:from-purple-700 hover:to-pink-700 transition-all duration-200 font-medium"
-                  >
-                    Add to Cart
-                  </button>
+                   {/* Action Buttons */}
+        <div className="flex flex-row justify-between items-center gap-4">
+          {/* Add to Cart Button */}
+          <button
+            onClick={(e) => handleAddToCart(perfume.id, e)}
+            disabled={perfume.stock === 0 || isLoading}
+            className={`flex-1 py-2.5 px-3 rounded-lg font-semibold transition-all duration-200 text-sm ${
+              perfume.stock === 0
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-gray-100 text-gray-800 hover:bg-gray-200 border border-gray-200'
+            }`}
+          >
+            {isLoading ? (
+              <div className="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-1">
+                <ShoppingCart className="w-3 h-3" />
+                <span className="truncate">Cart</span>
+              </div>
+            )}
+          </button>
+
+          {/* Buy Now Button */}
+          <button
+            onClick={(e) => handleAddToCart(perfume.id, e)}
+            disabled={perfume.stock === 0 || isBuyNowLoading}
+            className={`flex-1 py-2.5 px-3 rounded-lg font-semibold transition-all duration-200 text-sm ${
+              perfume.stock === 0
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-gradient-to-r from-purple-900 to-theme-900 text-white hover:bg-gradient-to-r hover:from-purple-900 hover:to-theme-900 hover:scale-[1.02] shadow-sm'
+            }`}
+          >
+            {isBuyNowLoading ? (
+              <div className="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-1">
+                <Zap className="w-3 h-3" />
+                <span className="truncate">Buy</span>
+              </div>
+            )}
+          </button>
+        </div>
                 </div>
               </div>
             ))}

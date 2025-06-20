@@ -12,8 +12,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Zafra - Premium Perfumes & Fragrances",
-  description: "Discover luxury perfumes and designer fragrances at Zafra. Shop from top brands with fast delivery in Dhaka, Bangladesh.",
+  title: "Scentare - Premium Perfumes & Fragrances",
+  description: "Discover luxury perfumes and designer fragrances at Scentare. Shop from top brands with fast delivery in Dhaka, Bangladesh.",
   keywords: "perfume, fragrance, luxury perfumes, designer fragrance, Bangladesh, Dhaka, online perfume shop",
 };
 
